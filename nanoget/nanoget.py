@@ -11,7 +11,7 @@ from Bio import SeqIO
 from multiprocessing import Pool
 import dateutil.parser
 import pysam
-import nanoplot.nanomath as nanomath
+import nanomath
 
 __version__ = 0.9.0
 
