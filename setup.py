@@ -8,7 +8,7 @@ here = path.abspath(path.dirname(__file__))
 
 setup(
     name='nanoget',
-    version='0.9.0',
+    version='0.9.1',
     description='Functions to extract information from Oxford Nanopore sequencing data and alignments.',
     long_description='Functions to extract information from Oxford Nanopore sequencing data and alignments.',
     url='https://github.com/wdecoster/nanoget',

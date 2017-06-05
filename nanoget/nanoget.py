@@ -13,7 +13,7 @@ import dateutil.parser
 import pysam
 import nanomath
 
-__version__ = 0.9.0
+__version__ = 0.9.1
 
 
 def processBam(bam, threads):
