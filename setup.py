@@ -6,9 +6,12 @@ from os import path
 
 here = path.abspath(path.dirname(__file__))
 
+exec(open('nanoget/version.py').read())
+
+
 setup(
     name='nanoget',
-    version='0.9.6',
+    version=__version__,
     description='Functions to extract information from Oxford Nanopore sequencing data and alignments.',
     long_description='Functions to extract information from Oxford Nanopore sequencing data and alignments.',
     url='https://github.com/wdecoster/nanoget',

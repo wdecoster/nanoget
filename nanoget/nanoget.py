@@ -12,8 +12,8 @@ from multiprocessing import Pool
 import dateutil.parser
 import pysam
 import nanomath
+from .version import __version__
 
-__version__ = "0.9.6"
 
 
 def processBam(bam, threads):
