@@ -2,6 +2,7 @@
 
 from __future__ import division
 import sys
+import os
 import time
 import logging
 import re
@@ -15,6 +16,13 @@ import nanomath
 from .version import __version__
 
 
+def checkExistance(f):
+	'''
+	Check if the file supplied as input exists
+	'''
+	if not os.path.isfile(f):
+		logging.error("File provided doesn't exist or the path is incorrect: {}".format(f))
+		sys.exit("File provided doesn't exist or the path is incorrect: {}".format(f))
 
 def processBam(bam, threads):
 	'''
@@ -29,6 +37,7 @@ def processBam(bam, threads):
 	Returned in a pandas DataFrame
 	'''
 	logging.info("Running in bam mode.")
+	checkExistance(bam)
 	samfile = pysam.AlignmentFile(bam, "rb")
 	if not samfile.has_index():
 		pysam.index(bam)
@@ -119,6 +128,7 @@ def handlecompressedFastq(inputfq):
 		logging.info("Reading from stdin.")
 		return sys.stdin
 	else:
+		checkExistance(inputfq)
 		if inputfq.endswith('.gz'):
 			import gzip
 			logging.info("Decompressing gzipped fastq.")
