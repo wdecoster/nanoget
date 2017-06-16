@@ -24,6 +24,39 @@ def checkExistance(f):
 		logging.error("File provided doesn't exist or the path is incorrect: {}".format(f))
 		sys.exit("File provided doesn't exist or the path is incorrect: {}".format(f))
 
+
+def processSumary(summaryfile):
+	'''
+	Extracting information from an albacore summary file with the following header:
+     1  filename
+     2  read_id
+     3  run_id
+     4  channel
+     5  start_time
+     6  duration
+     7  num_events
+     8  template_start
+     9  num_events_template
+    10  template_duration
+    11  num_called_template
+    12  sequence_length_template
+    13  mean_qscore_template
+    14  strand_score_template
+	'''
+	checkExistance(summaryfile)
+	datadf = pd.read_csv(
+		filepath_or_buffer=summaryfile,
+		sep="\t",
+		usecols=["channel", "start_time", "sequence_length_template", "mean_qscore_template"],
+		)
+	datadf.columns = ["channelIDs", "time", "lengths", "quals"]
+	a_time_stamps = np.array(datadf["time"], dtype='datetime64[s]')
+	datadf["start_time"] = a_time_stamps - np.amin(a_time_stamps)
+	logging.info("Collected statistics from summary file.")
+	return datadf
+
+
+
 def processBam(bam, threads):
 	'''
 	Processing function: calls pool of worker functions
