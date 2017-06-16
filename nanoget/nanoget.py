@@ -53,8 +53,7 @@ def processSumary(summaryfile):
 	a_time_stamps = np.array(datadf["time"], dtype='datetime64[s]')
 	datadf["start_time"] = a_time_stamps - np.amin(a_time_stamps)
 	logging.info("Collected statistics from summary file.")
-	return datadf
-
+	return datadf[datadf["lengths"] != 0]
 
 
 def processBam(bam, threads):
