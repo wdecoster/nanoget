@@ -21,7 +21,7 @@ def checkExistance(f):
 	Check if the file supplied as input exists
 	'''
 	if not os.path.isfile(f):
-		logging.error("File provided doesn't exist or the path is incorrect: {}".format(f))
+		logging.error("Nanoget: File provided doesn't exist or the path is incorrect: {}".format(f))
 		sys.exit("File provided doesn't exist or the path is incorrect: {}".format(f))
 
 
@@ -43,6 +43,7 @@ def processSumary(summaryfile):
     13  mean_qscore_template
     14  strand_score_template
 	'''
+	logging.info("Nanoget: Staring to collect statistics from summary file.")
 	checkExistance(summaryfile)
 	datadf = pd.read_csv(
 		filepath_or_buffer=summaryfile,
@@ -52,7 +53,7 @@ def processSumary(summaryfile):
 	datadf.columns = ["channelIDs", "time", "lengths", "quals"]
 	a_time_stamps = np.array(datadf["time"], dtype='datetime64[s]')
 	datadf["start_time"] = a_time_stamps - np.amin(a_time_stamps)
-	logging.info("Collected statistics from summary file.")
+	logging.info("Nanoget: Finished collecting statistics from summary file.")
 	return datadf[datadf["lengths"] != 0]
 
 
@@ -68,19 +69,19 @@ def processBam(bam, threads):
 	-edit distances to the reference genome scaled by read length
 	Returned in a pandas DataFrame
 	'''
-	logging.info("Running in bam mode.")
+	logging.info("Nanoget: Staring to collect statistics from bam file.")
 	checkExistance(bam)
 	samfile = pysam.AlignmentFile(bam, "rb")
 	if not samfile.has_index():
 		pysam.index(bam)
 		samfile = pysam.AlignmentFile(bam, "rb")  # Need to reload the samfile after creating index
-		logging.info("No index for bam file could be found, created index.")
+		logging.info("Nanoget: No index for bam file could be found, created index.")
 	if not samfile.header['HD']['SO'] == 'coordinate':
-		logging.info("Bam file not sorted by coordinate!.")
+		logging.info("Nanoget: Bam file not sorted by coordinate!.")
 		sys.exit("Please use a bam file sorted by coordinate.")
 	NumberOfmappedReads = samfile.mapped
 	NumberOfunmappedReads = samfile.unmapped
-	logging.info("Bam file contains {} mapped and {} unmapped reads.".format(NumberOfmappedReads, NumberOfunmappedReads))
+	logging.info("Nanoget: Bam file contains {} mapped and {} unmapped reads.".format(NumberOfmappedReads, NumberOfunmappedReads))
 	if NumberOfmappedReads == 0:
 		sys.exit("FATAL: not a single read was mapped in the bam file.")
 	chromosomes = samfile.references
@@ -104,7 +105,7 @@ def processBam(bam, threads):
 	datadf["mapQ"] = np.array([x for y in [elem[4] for elem in output] for x in y])
 	datadf["percentIdentity"] = np.array([x for y in [elem[5] for elem in output] for x in y])
 	assert datadf["lengths"].size == NumberOfmappedReads, "Unexpected difference in length of entries in datadict"
-	logging.info("Collected bam statistics.")
+	logging.info("Nanoget: Finished collecting statistics from bam file.")
 	return datadf
 
 
@@ -157,17 +158,18 @@ def handlecompressedFastq(inputfq):
 	Relies on file extensions to recognize compression
 	'''
 	if inputfq == 'stdin':
-		logging.info("Reading from stdin.")
+		logging.info("Nanoget: Reading from stdin.")
 		return sys.stdin
 	else:
 		checkExistance(inputfq)
+		get_compression_type(inputfq)
 		if inputfq.endswith('.gz'):
 			import gzip
-			logging.info("Decompressing gzipped fastq.")
+			logging.info("Nanoget: Decompressing gzipped fastq.")
 			return gzip.open(inputfq, 'rt')
 		elif inputfq.endswith('.bz2'):
 			import bz2
-			logging.info("Decompressing bz2 compressed fastq.")
+			logging.info("Nanoget: Decompressing bz2 compressed fastq.")
 			return bz2.BZ2File(inputfq, 'rt')
 		elif inputfq.endswith(('.fastq', '.fq', '.bgz')):
 			return open(inputfq, 'r')
@@ -177,12 +179,36 @@ def handlecompressedFastq(inputfq):
 						supported formats for --fastq are .gz, .bz2, .bgz, .fastq and .fq''')
 
 
+def get_compression_type(filename):
+	"""
+    Attempts to guess the compression (if any) on a file using the first few bytes.
+	Based on http://stackoverflow.com/questions/13044562 and https://github.com/rrwick/Porechop/blob/master/porechop/misc.py#L68
+    """
+    magic_dict = {'gz': (b'\x1f', b'\x8b', b'\x08'),
+                  'bz2': (b'\x42', b'\x5a', b'\x68'),
+                  'zip': (b'\x50', b'\x4b', b'\x03', b'\x04')}
+    max_len = max(len(x) for x in magic_dict.values())
+
+    unknown_file = open(filename, 'rb')
+    file_start = unknown_file.read(max_len)
+    unknown_file.close()
+    compression_type = 'plain'
+    for filetype, magic_bytes in magic_dict.items():
+        if file_start.startswith(magic_bytes):
+            compression_type = filetype
+    if compression_type == 'bz2':
+        sys.exit('Error: cannot use bzip2 format - use gzip instead')
+    if compression_type == 'zip':
+        sys.exit('Error: cannot use zip format - use gzip instead')
+    return compression_type
+
+
 def processFastqPlain(fastq):
 	'''
 	Processing function
 	Iterate over a fastq file and extract metrics
 	'''
-	logging.info("Running in fastq mode.")
+	logging.info("Nanoget: Starting to collect statistics from plain fastq file.")
 	inputfastq = handlecompressedFastq(fastq)
 	datadf = pd.DataFrame()
 	lengths = []
@@ -192,7 +218,7 @@ def processFastqPlain(fastq):
 		quals.append(nanomath.aveQual(record.letter_annotations["phred_quality"]))
 	datadf["lengths"] = np.array(lengths)
 	datadf["quals"] = np.array(quals)
-	logging.info("Collected fastq statistics.")
+	logging.info("Nanoget: Finished collecting statistics from plain fastq file.")
 	return datadf
 
 
@@ -206,7 +232,7 @@ def processFastq_rich(fastq):
 	Z indicates UTC time, T is the delimiter between date expression and time expression
 	dateutil.parser.parse("2016-07-15T14:23:22Z") # -> datetime.datetime(2016, 7, 15, 14, 23, 22, tzinfo=tzutc())
 	'''
-	logging.info("Running in fastq mode, expecting additional information added by albacore or MinKNOW.")
+	logging.info("Nanoget: Starting to collect statistics from rich fastq file.")
 	inputfastq = handlecompressedFastq(fastq)
 	datadf = pd.DataFrame()
 	lengths = []
@@ -226,5 +252,5 @@ def processFastq_rich(fastq):
 	datadf["channelIDs"] = np.array(channels)
 	a_time_stamps = np.array(time_stamps, dtype='datetime64[s]')
 	datadf["start_time"] = a_time_stamps - np.amin(a_time_stamps)
-	logging.info("Collected fastq statistics.")
+	logging.info("Nanoget: Finished collecting statistics from rich fastq file.")
 	return datadf
