@@ -181,26 +181,26 @@ def handlecompressedFastq(inputfq):
 
 def get_compression_type(filename):
 	"""
-    Attempts to guess the compression (if any) on a file using the first few bytes.
+	Attempts to guess the compression (if any) on a file using the first few bytes.
 	Based on http://stackoverflow.com/questions/13044562 and https://github.com/rrwick/Porechop/blob/master/porechop/misc.py#L68
-    """
-    magic_dict = {'gz': (b'\x1f', b'\x8b', b'\x08'),
-                  'bz2': (b'\x42', b'\x5a', b'\x68'),
-                  'zip': (b'\x50', b'\x4b', b'\x03', b'\x04')}
-    max_len = max(len(x) for x in magic_dict.values())
+	"""
+	magic_dict = {'gz': (b'\x1f', b'\x8b', b'\x08'),
+					'bz2': (b'\x42', b'\x5a', b'\x68'),
+					'zip': (b'\x50', b'\x4b', b'\x03', b'\x04')}
+	max_len = max(len(x) for x in magic_dict.values())
 
-    unknown_file = open(filename, 'rb')
-    file_start = unknown_file.read(max_len)
-    unknown_file.close()
-    compression_type = 'plain'
-    for filetype, magic_bytes in magic_dict.items():
-        if file_start.startswith(magic_bytes):
-            compression_type = filetype
-    if compression_type == 'bz2':
-        sys.exit('Error: cannot use bzip2 format - use gzip instead')
-    if compression_type == 'zip':
-        sys.exit('Error: cannot use zip format - use gzip instead')
-    return compression_type
+	unknown_file = open(filename, 'rb')
+	file_start = unknown_file.read(max_len)
+	unknown_file.close()
+	compression_type = 'plain'
+	for filetype, magic_bytes in magic_dict.items():
+		if file_start.startswith(magic_bytes):
+			compression_type = filetype
+	if compression_type == 'bz2':
+		sys.exit('Error: cannot use bzip2 format - use gzip instead')
+	if compression_type == 'zip':
+		sys.exit('Error: cannot use zip format - use gzip instead')
+	return compression_type
 
 
 def processFastqPlain(fastq):
@@ -214,8 +214,11 @@ def processFastqPlain(fastq):
 	lengths = []
 	quals = []
 	for record in SeqIO.parse(inputfastq, "fastq"):
-		lengths.append(len(record))
-		quals.append(nanomath.aveQual(record.letter_annotations["phred_quality"]))
+		try:
+			quals.append(nanomath.aveQual(record.letter_annotations["phred_quality"]))
+			lengths.append(len(record))
+		except ZeroDivisionError:
+			pass
 	datadf["lengths"] = np.array(lengths)
 	datadf["quals"] = np.array(quals)
 	logging.info("Nanoget: Finished collecting statistics from plain fastq file.")
@@ -240,13 +243,16 @@ def processFastq_rich(fastq):
 	channels = []
 	time_stamps = []
 	for record in SeqIO.parse(inputfastq, "fastq"):
-		lengths.append(len(record))
-		quals.append(nanomath.aveQual(record.letter_annotations["phred_quality"]))
-		for data in record.description.split(' '):  # This can easily be adapted to include more metrics using the same format
-			if data.startswith('ch='):
-				channels.append(int(data[3:]))
-			elif data.startswith('start_time='):
-				time_stamps.append(dateutil.parser.parse(data[11:]))
+		try:
+			quals.append(nanomath.aveQual(record.letter_annotations["phred_quality"]))
+			lengths.append(len(record))
+			for data in record.description.split(' '):  # This can easily be adapted to include more metrics using the same format
+				if data.startswith('ch='):
+					channels.append(int(data[3:]))
+				elif data.startswith('start_time='):
+					time_stamps.append(dateutil.parser.parse(data[11:]))
+		except ZeroDivisionError:
+			pass
 	datadf["lengths"] = np.array(lengths)
 	datadf["quals"] = np.array(quals)
 	datadf["channelIDs"] = np.array(channels)
