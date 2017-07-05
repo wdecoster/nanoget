@@ -48,9 +48,9 @@ def processSumary(summaryfile):
 	datadf = pd.read_csv(
 		filepath_or_buffer=summaryfile,
 		sep="\t",
-		usecols=["channel", "start_time", "sequence_length_template", "mean_qscore_template"],
+		usecols=["run_id", "channel", "start_time", "sequence_length_template", "mean_qscore_template"],
 		)
-	datadf.columns = ["channelIDs", "time", "lengths", "quals"]
+	datadf.columns = ["runIDs", "channelIDs", "time", "lengths", "quals"]
 	a_time_stamps = np.array(datadf["time"], dtype='datetime64[s]')
 	datadf["start_time"] = a_time_stamps - np.amin(a_time_stamps)
 	logging.info("Nanoget: Finished collecting statistics from summary file.")
