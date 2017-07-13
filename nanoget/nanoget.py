@@ -45,11 +45,16 @@ def processSumary(summaryfile):
 	'''
 	logging.info("Nanoget: Staring to collect statistics from summary file.")
 	checkExistance(summaryfile)
-	datadf = pd.read_csv(
-		filepath_or_buffer=summaryfile,
-		sep="\t",
-		usecols=["run_id", "channel", "start_time", "sequence_length_template", "mean_qscore_template"],
-		)
+	cols = ["run_id", "channel", "start_time", "sequence_length_template", "mean_qscore_template"]
+	try:
+		datadf = pd.read_csv(
+			filepath_or_buffer=summaryfile,
+			sep="\t",
+			usecols=cols,
+			)
+	except ValueError:
+		logging.error("Nanoget: did not find expected columns in summary file.")
+		sys.exit("ERROR: did not find expected columns in summary file:\n {}".format(', '.join(cols)))
 	datadf.columns = ["runIDs", "channelIDs", "time", "lengths", "quals"]
 	a_time_stamps = np.array(datadf["time"], dtype='datetime64[s]')
 	datadf["start_time"] = a_time_stamps - np.amin(a_time_stamps)
@@ -242,20 +247,24 @@ def processFastq_rich(fastq):
 	quals = []
 	channels = []
 	time_stamps = []
+	runids = []
 	for record in SeqIO.parse(inputfastq, "fastq"):
 		try:
 			quals.append(nanomath.aveQual(record.letter_annotations["phred_quality"]))
 			lengths.append(len(record))
-			for data in record.description.split(' '):  # This can easily be adapted to include more metrics using the same format
-				if data.startswith('ch='):
-					channels.append(int(data[3:]))
-				elif data.startswith('start_time='):
-					time_stamps.append(dateutil.parser.parse(data[11:]))
-		except ZeroDivisionError:
+			r_info = {field.split('=')[0] : field.split('=')[1] for field in record.description.split(' ')[1:]}
+			channels.append(r_info["ch"])
+			time_stamps.append(dateutil.parser.parse(r_info["start_time"]))
+			runids.append(r_info["runid"])
+		except ZeroDivisionError:  # For reads with length 0, nanomath.aveQual will throw a ZeroDivisionError
 			pass
+		except KeyError:
+			logging.error("Nanoget: keyerror when processing record {}".format(record.description))
+			sys.exit("Unexpected fastq identifier:\n{}\n\nmissing one or more of expected fields 'ch', 'start_time' or 'runid'".format(record.description))
 	datadf["lengths"] = np.array(lengths)
 	datadf["quals"] = np.array(quals)
 	datadf["channelIDs"] = np.array(channels)
+	datadf["runIDs"] = np.array(runids)
 	a_time_stamps = np.array(time_stamps, dtype='datetime64[s]')
 	datadf["start_time"] = a_time_stamps - np.amin(a_time_stamps)
 	logging.info("Nanoget: Finished collecting statistics from rich fastq file.")
