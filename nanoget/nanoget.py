@@ -25,7 +25,7 @@ def checkExistance(f):
 		sys.exit("File provided doesn't exist or the path is incorrect: {}".format(f))
 
 
-def processSumary(summaryfile):
+def processSummary(summaryfile):
 	'''
 	Extracting information from an albacore summary file with the following header:
      1  filename
