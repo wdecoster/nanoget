@@ -263,7 +263,7 @@ def processFastq_rich(fastq):
 			sys.exit("Unexpected fastq identifier:\n{}\n\nmissing one or more of expected fields 'ch', 'start_time' or 'runid'".format(record.description))
 	datadf["lengths"] = np.array(lengths)
 	datadf["quals"] = np.array(quals)
-	datadf["channelIDs"] = np.array(channels)
+	datadf["channelIDs"] = np.int16(channels)
 	datadf["runIDs"] = np.array(runids)
 	a_time_stamps = np.array(time_stamps, dtype='datetime64[s]')
 	datadf["start_time"] = a_time_stamps - np.amin(a_time_stamps)
