@@ -45,7 +45,7 @@ def processSummary(summaryfile):
 	'''
 	logging.info("Nanoget: Staring to collect statistics from summary file.")
 	checkExistance(summaryfile)
-	cols = ["run_id", "channel", "start_time", "sequence_length_template", "mean_qscore_template"]
+	cols = ["read_id", "run_id", "channel", "start_time", "sequence_length_template", "mean_qscore_template"]
 	try:
 		datadf = pd.read_csv(
 			filepath_or_buffer=summaryfile,
@@ -55,7 +55,7 @@ def processSummary(summaryfile):
 	except ValueError:
 		logging.error("Nanoget: did not find expected columns in summary file.")
 		sys.exit("ERROR: did not find expected columns in summary file:\n {}".format(', '.join(cols)))
-	datadf.columns = ["runIDs", "channelIDs", "time", "lengths", "quals"]
+	datadf.columns = ["readIDs", "runIDs", "channelIDs", "time", "lengths", "quals"]
 	a_time_stamps = np.array(datadf["time"], dtype='datetime64[s]')
 	datadf["start_time"] = a_time_stamps - np.amin(a_time_stamps)
 	logging.info("Nanoget: Finished collecting statistics from summary file.")
