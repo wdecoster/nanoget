@@ -25,9 +25,11 @@ def checkExistance(f):
 		sys.exit("File provided doesn't exist or the path is incorrect: {}".format(f))
 
 
-def processSummary(summaryfile):
+def processSummary(summaryfile, readtype):
 	'''
-	Extracting information from an albacore summary file with the following header:
+	Extracting information from an albacore summary file. The fields below may or may not exist, depending on the type of sequencing performed.
+	Fields 1-14 are for 1D sequencing.
+	Fields 1-23 for 2D sequencing.
      1  filename
      2  read_id
      3  run_id
@@ -35,6 +37,7 @@ def processSummary(summaryfile):
      5  start_time
      6  duration
      7  num_events
+
      8  template_start
      9  num_events_template
     10  template_duration
@@ -42,10 +45,24 @@ def processSummary(summaryfile):
     12  sequence_length_template
     13  mean_qscore_template
     14  strand_score_template
+
+	15  complement_start
+	16	num_events_complement
+	17	complement_duration
+	18	num_called_complement
+	19	sequence_length_complement
+	20	mean_qscore_complement
+	21	strand_score_complement
+
+	22	sequence_length_2d
+	23	mean_qscore_2d
 	'''
 	logging.info("Nanoget: Staring to collect statistics from summary file.")
 	checkExistance(summaryfile)
-	cols = ["read_id", "run_id", "channel", "start_time", "sequence_length_template", "mean_qscore_template"]
+	if readtype == "1D":
+		cols = ["read_id", "run_id", "channel", "start_time", "sequence_length_template", "mean_qscore_template"]
+	elif readtype == "2D":
+		cols = ["read_id", "run_id", "channel", "start_time",  "sequence_length_2d", "mean_qscore_2d"]
 	try:
 		datadf = pd.read_csv(
 			filepath_or_buffer=summaryfile,
@@ -53,7 +70,7 @@ def processSummary(summaryfile):
 			usecols=cols,
 			)
 	except ValueError:
-		logging.error("Nanoget: did not find expected columns in summary file.")
+		logging.error("Nanoget: did not find expected columns in summary file:\n {}.".format(', '.join(cols)))
 		sys.exit("ERROR: did not find expected columns in summary file:\n {}".format(', '.join(cols)))
 	datadf.columns = ["readIDs", "runIDs", "channelIDs", "time", "lengths", "quals"]
 	a_time_stamps = np.array(datadf["time"], dtype='datetime64[s]')
