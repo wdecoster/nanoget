@@ -27,7 +27,10 @@ def checkExistance(f):
 
 def processSummary(summaryfile, readtype):
 	'''
-	Extracting information from an albacore summary file. The fields below may or may not exist, depending on the type of sequencing performed.
+	Extracting information from an albacore summary file.
+	Only reads which have a >0 length are returned.
+
+	The fields below may or may not exist, depending on the type of sequencing performed.
 	Fields 1-14 are for 1D sequencing.
 	Fields 1-23 for 2D sequencing.
      1  filename
@@ -60,8 +63,10 @@ def processSummary(summaryfile, readtype):
 	logging.info("Nanoget: Staring to collect statistics from summary file.")
 	checkExistance(summaryfile)
 	if readtype == "1D":
+		logging.info("Collecting statistics for 1D/template sequencing")
 		cols = ["read_id", "run_id", "channel", "start_time", "sequence_length_template", "mean_qscore_template"]
 	elif readtype == "2D":
+		logging.info("Collecting statistics for 2D sequencing")
 		cols = ["read_id", "run_id", "channel", "start_time",  "sequence_length_2d", "mean_qscore_2d"]
 	try:
 		datadf = pd.read_csv(
