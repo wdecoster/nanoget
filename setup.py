@@ -3,8 +3,10 @@ from setuptools import setup, find_packages
 # To use a consistent encoding
 from codecs import open
 from os import path
+import pypandoc
 
 here = path.abspath(path.dirname(__file__))
+
 
 exec(open('nanoget/version.py').read())
 
@@ -13,7 +15,7 @@ setup(
     name='nanoget',
     version=__version__,
     description='Functions to extract information from Oxford Nanopore sequencing data and alignments.',
-    long_description='Functions to extract information from Oxford Nanopore sequencing data and alignments.',
+    long_description=pypandoc.convert(path.join(here, 'README.md'), 'rst'),
     url='https://github.com/wdecoster/nanoget',
     author='Wouter De Coster',
     author_email='decosterwouter@gmail.com',
