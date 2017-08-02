@@ -16,7 +16,7 @@ Fastq files can be compressed using gzip, bzip2 or bgzip. The data is returned a
 pip install nanoget
 ```
 or  
-![install with conda](https://anaconda.org/bioconda/nanoget/badges/installer/conda.svg)
+[![install with conda](https://anaconda.org/bioconda/nanoget/badges/installer/conda.svg)](https://anaconda.org/bioconda/nanoget)
 ```
 conda install -c bioconda nanoget
 ```
