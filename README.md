@@ -20,3 +20,6 @@ or
 ```
 conda install -c bioconda nanoget
 ```
+
+## STATUS
+[![Build Status](https://travis-ci.org/wdecoster/nanoget.svg?branch=master)](https://travis-ci.org/wdecoster/nanoget)
