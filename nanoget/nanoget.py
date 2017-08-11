@@ -33,6 +33,7 @@ def processSummary(summaryfile, readtype):
 	The fields below may or may not exist, depending on the type of sequencing performed.
 	Fields 1-14 are for 1D sequencing.
 	Fields 1-23 for 2D sequencing.
+	Fields 24-27, 2-5, 22-23 for 1D^2 (1D2) sequencing
      1  filename
      2  read_id
      3  run_id
@@ -40,7 +41,6 @@ def processSummary(summaryfile, readtype):
      5  start_time
      6  duration
      7  num_events
-
      8  template_start
      9  num_events_template
     10  template_duration
@@ -48,7 +48,6 @@ def processSummary(summaryfile, readtype):
     12  sequence_length_template
     13  mean_qscore_template
     14  strand_score_template
-
 	15  complement_start
 	16	num_events_complement
 	17	complement_duration
@@ -56,17 +55,19 @@ def processSummary(summaryfile, readtype):
 	19	sequence_length_complement
 	20	mean_qscore_complement
 	21	strand_score_complement
-
 	22	sequence_length_2d
 	23	mean_qscore_2d
+	24	filename1
+	25	filename2
+	26	read_id1
+	27	read_id2
 	'''
 	logging.info("Nanoget: Staring to collect statistics from summary file.")
 	checkExistance(summaryfile)
+	logging.info("Collecting statistics for {} sequencing".format(readtype))
 	if readtype == "1D":
-		logging.info("Collecting statistics for 1D/template sequencing")
 		cols = ["read_id", "run_id", "channel", "start_time", "sequence_length_template", "mean_qscore_template"]
-	elif readtype == "2D":
-		logging.info("Collecting statistics for 2D sequencing")
+	elif readtype in ["2D", "1D2"]:
 		cols = ["read_id", "run_id", "channel", "start_time",  "sequence_length_2d", "mean_qscore_2d"]
 	try:
 		datadf = pd.read_csv(
