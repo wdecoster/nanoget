@@ -3,7 +3,6 @@
 from __future__ import division
 import sys
 import os
-import time
 import logging
 import re
 import pandas as pd
@@ -13,7 +12,7 @@ from multiprocessing import Pool
 import dateutil.parser
 import pysam
 import nanomath
-from .version import __version__
+
 
 
 def checkExistance(f):
