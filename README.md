@@ -22,4 +22,4 @@ conda install -c bioconda nanoget
 ```
 
 ## STATUS
-[![Build Status](https://travis-ci.org/wdecoster/nanoget.svg?branch=master)](https://travis-ci.org/wdecoster/nanoget)
+[![Build Status](https://travis-ci.org/wdecoster/nanoget.svg?branch=master)](https://travis-ci.org/wdecoster/nanoget) [![Code Health](https://landscape.io/github/wdecoster/nanoget/master/landscape.svg?style=flat)](https://landscape.io/github/wdecoster/nanoget/master)
