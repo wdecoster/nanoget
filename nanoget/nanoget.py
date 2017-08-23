@@ -42,7 +42,7 @@ def processSummary(summaryfile, readtype):
      8  template_start
      9  num_events_template
     10  template_duration
-    11  num_called_template
+    11  num_called_templatexticks
     12  sequence_length_template
     13  mean_qscore_template
     14  strand_score_template
@@ -106,12 +106,12 @@ def processBam(bam, threads):
         samfile = pysam.AlignmentFile(bam, "rb")  # Need to reload the samfile after creating index
         logging.info("Nanoget: No index for bam file could be found, created index.")
     if not samfile.header['HD']['SO'] == 'coordinate':
-        logging.ERROR("Nanoget: Bam file not sorted by coordinate!.")
+        logging.error("Nanoget: Bam file not sorted by coordinate!.")
         sys.exit("Please use a bam file sorted by coordinate.")
     logging.info("Nanoget: Bam file contains {} mapped and {} unmapped reads.".format(
         samfile.mapped, samfile.unmapped))
     if samfile.mapped == 0:
-        logging.ERROR("Nanoget: Bam file does not contain aligned reads.")
+        logging.error("Nanoget: Bam file does not contain aligned reads.")
         sys.exit("FATAL: not a single read was mapped in the bam file.")
     chromosomes = samfile.references
     pool = Pool(processes=threads)
