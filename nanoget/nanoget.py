@@ -98,7 +98,7 @@ def processBam(bam, threads):
     -edit distances to the reference genome scaled by read length
     Returned in a pandas DataFrame
     '''
-    logging.info("Nanoget: Staring to collect statistics from bam file.")
+    logging.info("Nanoget: Starting to collect statistics from bam file.")
     checkExistance(bam)
     samfile = pysam.AlignmentFile(bam, "rb")
     if not samfile.has_index():
@@ -106,16 +106,14 @@ def processBam(bam, threads):
         samfile = pysam.AlignmentFile(bam, "rb")  # Need to reload the samfile after creating index
         logging.info("Nanoget: No index for bam file could be found, created index.")
     if not samfile.header['HD']['SO'] == 'coordinate':
-        logging.info("Nanoget: Bam file not sorted by coordinate!.")
+        logging.ERROR("Nanoget: Bam file not sorted by coordinate!.")
         sys.exit("Please use a bam file sorted by coordinate.")
-    NumberOfmappedReads = samfile.mapped
-    NumberOfunmappedReads = samfile.unmapped
     logging.info("Nanoget: Bam file contains {} mapped and {} unmapped reads.".format(
-        NumberOfmappedReads, NumberOfunmappedReads))
-    if NumberOfmappedReads == 0:
+        samfile.mapped, samfile.unmapped))
+    if samfile.mapped == 0:
+        logging.ERROR("Nanoget: Bam file does not contain aligned reads.")
         sys.exit("FATAL: not a single read was mapped in the bam file.")
     chromosomes = samfile.references
-    datadf = pd.DataFrame()
     pool = Pool(processes=threads)
     params = zip([bam] * len(chromosomes), chromosomes)
     try:
@@ -128,16 +126,20 @@ def processBam(bam, threads):
     # Output contains a tuple per worker
     # Each tuple contains lists per metric
     # Unpacked by following nested list comprehensions
+    datadf = pd.DataFrame()
     datadf["lengths"] = np.array([x for y in [elem[0] for elem in output] for x in y])
     datadf["aligned_lengths"] = np.array([x for y in [elem[1] for elem in output] for x in y])
     datadf["quals"] = np.array([x for y in [elem[2] for elem in output] for x in y])
     datadf["aligned_quals"] = np.array([x for y in [elem[3] for elem in output] for x in y])
     datadf["mapQ"] = np.array([x for y in [elem[4] for elem in output] for x in y])
     datadf["percentIdentity"] = np.array([x for y in [elem[5] for elem in output] for x in y])
-    assert datadf["lengths"].size == NumberOfmappedReads, "Unexpected difference in length of entries in datadict"
+    logging.info("Nanoget: bam contains {} primary alignments.".format(datadf["lengths"].size))
     logging.info("Nanoget: Finished collecting statistics from bam file.")
     return datadf
 
+
+#  TypeError
+#  or try-except
 
 def extractFromBam(params):
     '''
@@ -159,17 +161,18 @@ def extractFromBam(params):
     mapQ = []
     pID = []
     for read in samfile.fetch(reference=chromosome, multiple_iterators=True):
-        lengths.append(read.query_length)
-        alignedLengths.append(read.query_alignment_length)
-        quals.append(nanomath.aveQual(read.query_qualities))
-        alignedQuals.append(nanomath.aveQual(read.query_alignment_qualities))
-        mapQ.append(read.mapping_quality)
-        try:
-            pID.append((1 - read.get_tag("NM") / read.query_alignment_length) * 100)
-        except KeyError:
-            pID.append((1 -
-                        (parseMD(read.get_tag("MD")) + parseCIGAR(read.cigartuples))
-                        / read.query_alignment_length) * 100)
+        if not read.is_secondary:
+            quals.append(nanomath.aveQual(read.query_qualities))
+            alignedQuals.append(nanomath.aveQual(read.query_alignment_qualities))
+            lengths.append(read.query_length)
+            alignedLengths.append(read.query_alignment_length)
+            mapQ.append(read.mapping_quality)
+            try:
+                pID.append((1 - read.get_tag("NM") / read.query_alignment_length) * 100)
+            except KeyError:
+                pID.append((1 -
+                            (parseMD(read.get_tag("MD")) + parseCIGAR(read.cigartuples))
+                            / read.query_alignment_length) * 100)
     return (lengths, alignedLengths, quals, alignedQuals, mapQ, pID)
 
 
