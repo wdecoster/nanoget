@@ -1,1 +1,5 @@
 .remote-sync.json
+README.rst
+dist/
+nanoget.egg-info/
+nanoget/__pycache__/
