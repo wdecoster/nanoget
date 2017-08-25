@@ -1,6 +1,12 @@
 # nanoget
 This module provides functions to extract useful metrics from Oxford Nanopore sequencing reads and alignments.  
 
+[![Twitter URL](https://img.shields.io/twitter/url/https/twitter.com/wouter_decoster.svg?style=social&label=Follow%20%40wouter_decoster)](https://twitter.com/wouter_decoster)
+[![install with conda](https://anaconda.org/bioconda/nanoget/badges/installer/conda.svg)](https://anaconda.org/bioconda/nanoget)
+[![Build Status](https://travis-ci.org/wdecoster/nanoget.svg?branch=master)](https://travis-ci.org/wdecoster/nanoget)
+[![Code  Health](https://landscape.io/github/wdecoster/nanoget/master/landscape.svg?style=flat)](https://landscape.io/github/wdecoster/nanoget/master)
+
+
 ## FUNCTIONS
 Data can be presented in the following formats, using the following functions:  
 - A sorted bam file `processBam(bamfile, threads)`  
@@ -22,4 +28,5 @@ conda install -c bioconda nanoget
 ```
 
 ## STATUS
-[![Build Status](https://travis-ci.org/wdecoster/nanoget.svg?branch=master)](https://travis-ci.org/wdecoster/nanoget) [![Code Health](https://landscape.io/github/wdecoster/nanoget/master/landscape.svg?style=flat)](https://landscape.io/github/wdecoster/nanoget/master)
+[![Build Status](https://travis-ci.org/wdecoster/nanoget.svg?branch=master)](https://travis-ci.org/wdecoster/nanoget)
+[![Code  Health](https://landscape.io/github/wdecoster/nanoget/master/landscape.svg?style=flat)](https://landscape.io/github/wdecoster/nanoget/master)
