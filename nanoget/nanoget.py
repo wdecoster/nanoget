@@ -234,7 +234,7 @@ def processFastqPlain(fastq):
         try:
             quals.append(nanomath.aveQual(record.letter_annotations["phred_quality"]))
             lengths.append(len(record))
-        except ZeroDivisionError:
+        except ZeroDivisionError:  # If length 0, nanomath.aveQual will throw a ZeroDivisionError
             pass
     logging.info("Nanoget: Finished collecting statistics from plain fastq file.")
     return pd.DataFrame(data={"lengths": np.array(lengths), "quals": np.array(quals)})
