@@ -221,23 +221,26 @@ def handlecompressedFastq(inputfq):
                         supported formats for --fastq are .gz, .bz2, .bgz, .fastq and .fq''')
 
 
-def processFastqPlain(fastq):
+def processFastqPlain(fastq, threads):
     '''
     Processing function
     Iterate over a fastq file and extract metrics
+    Parallelized, although there is not much to gain with using many threads
+    Saturation already starts at threads=3
     '''
     logging.info("Nanoget: Starting to collect statistics from plain fastq file.")
     inputfastq = handlecompressedFastq(fastq)
-    lengths = []
-    quals = []
-    for record in SeqIO.parse(inputfastq, "fastq"):
-        try:
-            quals.append(nanomath.aveQual(record.letter_annotations["phred_quality"]))
-            lengths.append(len(record))
-        except ZeroDivisionError:  # If length 0, nanomath.aveQual will throw a ZeroDivisionError
-            pass
+    pool = Pool(processes=threads)
+    output = [results for results in pool.imap(extractFromFastq, SeqIO.parse(inputfastq, "fastq"))]
     logging.info("Nanoget: Finished collecting statistics from plain fastq file.")
-    return pd.DataFrame(data={"lengths": np.array(lengths), "quals": np.array(quals)})
+    return pd.DataFrame(data={"lengths": np.array([item[0] for item in output]), "quals": np.array([item[0] for item in output])})
+
+
+def extractFromFastq(rec):
+    try:
+        return (nanomath.aveQual(rec.letter_annotations["phred_quality"]), len(rec))
+    except ZeroDivisionError:  # If length 0, nanomath.aveQual will throw a ZeroDivisionError
+        pass
 
 
 def info2dict(info):
