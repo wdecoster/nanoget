@@ -126,20 +126,18 @@ def processBam(bam, threads):
     # Output contains a tuple per worker
     # Each tuple contains lists per metric
     # Unpacked by following nested list comprehensions
-    datadf = pd.DataFrame()
-    datadf["lengths"] = np.array([x for y in [elem[0] for elem in output] for x in y])
-    datadf["aligned_lengths"] = np.array([x for y in [elem[1] for elem in output] for x in y])
-    datadf["quals"] = np.array([x for y in [elem[2] for elem in output] for x in y])
-    datadf["aligned_quals"] = np.array([x for y in [elem[3] for elem in output] for x in y])
-    datadf["mapQ"] = np.array([x for y in [elem[4] for elem in output] for x in y])
-    datadf["percentIdentity"] = np.array([x for y in [elem[5] for elem in output] for x in y])
+    datadf = pd.DataFrame(data={
+        "lengths": np.array([x for y in [elem[0] for elem in output] for x in y]),
+        "aligned_lengths": np.array([x for y in [elem[1] for elem in output] for x in y]),
+        "quals": np.array([x for y in [elem[2] for elem in output] for x in y]),
+        "aligned_quals": np.array([x for y in [elem[3] for elem in output] for x in y]),
+        "mapQ": np.array([x for y in [elem[4] for elem in output] for x in y]),
+        "percentIdentity": np.array([x for y in [elem[5] for elem in output] for x in y]),
+    })
     logging.info("Nanoget: bam contains {} primary alignments.".format(datadf["lengths"].size))
     logging.info("Nanoget: Finished collecting statistics from bam file.")
     return datadf
 
-
-#  TypeError
-#  or try-except
 
 def extractFromBam(params):
     '''
@@ -195,7 +193,6 @@ def handlecompressedFastq(inputfq):
         return sys.stdin
     else:
         checkExistance(inputfq)
-        get_compression_type(inputfq)
         if inputfq.endswith('.gz'):
             import gzip
             logging.info("Nanoget: Decompressing gzipped fastq.")
@@ -212,31 +209,6 @@ def handlecompressedFastq(inputfq):
                         supported formats for --fastq are .gz, .bz2, .bgz, .fastq and .fq''')
 
 
-def get_compression_type(filename):
-    """
-    Attempts to guess the compression (if any) on a file using the first few bytes.
-    Based on http://stackoverflow.com/questions/13044562
-    and https://github.com/rrwick/Porechop/blob/master/porechop/misc.py#L68
-    """
-    magic_dict = {'gz': (b'\x1f', b'\x8b', b'\x08'),
-                  'bz2': (b'\x42', b'\x5a', b'\x68'),
-                  'zip': (b'\x50', b'\x4b', b'\x03', b'\x04')}
-    max_len = max(len(x) for x in magic_dict.values())
-
-    unknown_file = open(filename, 'rb')
-    file_start = unknown_file.read(max_len)
-    unknown_file.close()
-    compression_type = 'plain'
-    for filetype, magic_bytes in magic_dict.items():
-        if file_start.startswith(magic_bytes):
-            compression_type = filetype
-    if compression_type == 'bz2':
-        sys.exit('Error: cannot use bzip2 format - use gzip instead')
-    if compression_type == 'zip':
-        sys.exit('Error: cannot use zip format - use gzip instead')
-    return compression_type
-
-
 def processFastqPlain(fastq):
     '''
     Processing function
@@ -244,7 +216,6 @@ def processFastqPlain(fastq):
     '''
     logging.info("Nanoget: Starting to collect statistics from plain fastq file.")
     inputfastq = handlecompressedFastq(fastq)
-    datadf = pd.DataFrame()
     lengths = []
     quals = []
     for record in SeqIO.parse(inputfastq, "fastq"):
@@ -253,10 +224,8 @@ def processFastqPlain(fastq):
             lengths.append(len(record))
         except ZeroDivisionError:
             pass
-    datadf["lengths"] = np.array(lengths)
-    datadf["quals"] = np.array(quals)
     logging.info("Nanoget: Finished collecting statistics from plain fastq file.")
-    return datadf
+    return pd.DataFrame(data={"lengths": np.array(lengths), "quals": np.array(quals)})
 
 
 def processFastq_rich(fastq):
@@ -272,7 +241,6 @@ def processFastq_rich(fastq):
     '''
     logging.info("Nanoget: Starting to collect statistics from rich fastq file.")
     inputfastq = handlecompressedFastq(fastq)
-    datadf = pd.DataFrame()
     lengths = []
     quals = []
     channels = []
@@ -294,11 +262,13 @@ def processFastq_rich(fastq):
             sys.exit("Unexpected fastq identifier:\n{}\n\n \
             missing one or more of expected fields 'ch', 'start_time' or 'runid'".format(
                 record.description))
-    datadf["lengths"] = np.array(lengths)
-    datadf["quals"] = np.array(quals)
-    datadf["channelIDs"] = np.int16(channels)
-    datadf["runIDs"] = np.array(runids)
     a_time_stamps = np.array(time_stamps, dtype='datetime64[s]')
-    datadf["start_time"] = a_time_stamps - np.amin(a_time_stamps)
+    datadf = pd.DataFrame(data={
+        "lengths": np.array(lengths),
+        "quals": np.array(quals),
+        "channelIDs": np.int16(channels),
+        "runIDs": np.array(runids),
+        "start_time": a_time_stamps - np.amin(a_time_stamps)
+    })
     logging.info("Nanoget: Finished collecting statistics from rich fastq file.")
     return datadf
