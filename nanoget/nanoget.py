@@ -86,19 +86,14 @@ def processSummary(summaryfile, readtype):
     return datadf[datadf["lengths"] != 0]
 
 
-def processBam(bam, threads):
+def checkBam(bam):
     '''
-    Processing function: calls pool of worker functions
-    to extract from a bam file the following metrics:
-    -lengths
-    -aligned lengths
-    -qualities
-    -aligned qualities
-    -mapping qualities
-    -edit distances to the reference genome scaled by read length
-    Returned in a pandas DataFrame
+    Check if bam file
+    - exists
+    - has an index (create if necessary)
+    - is sorted by coordinate
+    - has at least one mapped read
     '''
-    logging.info("Nanoget: Starting to collect statistics from bam file.")
     checkExistance(bam)
     samfile = pysam.AlignmentFile(bam, "rb")
     if not samfile.has_index():
@@ -113,6 +108,23 @@ def processBam(bam, threads):
     if samfile.mapped == 0:
         logging.error("Nanoget: Bam file does not contain aligned reads.")
         sys.exit("FATAL: not a single read was mapped in the bam file.")
+    return samfile
+
+
+def processBam(bam, threads):
+    '''
+    Processing function: calls pool of worker functions
+    to extract from a bam file the following metrics:
+    -lengths
+    -aligned lengths
+    -qualities
+    -aligned qualities
+    -mapping qualities
+    -edit distances to the reference genome scaled by read length
+    Returned in a pandas DataFrame
+    '''
+    logging.info("Nanoget: Starting to collect statistics from bam file.")
+    samfile = checkBam(bam)
     chromosomes = samfile.references
     pool = Pool(processes=threads)
     params = zip([bam] * len(chromosomes), chromosomes)
