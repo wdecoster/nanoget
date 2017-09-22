@@ -233,7 +233,10 @@ def processFastqPlain(fastq, threads):
     pool = Pool(processes=threads)
     output = [results for results in pool.imap(extractFromFastq, SeqIO.parse(inputfastq, "fastq"))]
     logging.info("Nanoget: Finished collecting statistics from plain fastq file.")
-    return pd.DataFrame(data={"lengths": np.array([item[0] for item in output]), "quals": np.array([item[0] for item in output])})
+    return pd.DataFrame(data={
+        "lengths": np.array([item[1] for item in output]),
+        "quals": np.array([item[0] for item in output])
+    })
 
 
 def extractFromFastq(rec):
