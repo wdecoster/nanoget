@@ -231,7 +231,14 @@ def processFastqPlain(fastq, threads):
     logging.info("Nanoget: Starting to collect statistics from plain fastq file.")
     inputfastq = handlecompressedFastq(fastq)
     pool = Pool(processes=threads)
-    output = [results for results in pool.imap(extractFromFastq, SeqIO.parse(inputfastq, "fastq"))]
+    try:
+        output = [results for results in pool.imap(
+            extractFromFastq, SeqIO.parse(inputfastq, "fastq"))]
+    except KeyboardInterrupt:
+        sys.stderr.write("Terminating worker threads")
+        pool.terminate()
+        pool.join()
+        sys.exit()
     logging.info("Nanoget: Finished collecting statistics from plain fastq file.")
     return pd.DataFrame(data={
         "lengths": np.array([item[1] for item in output]),
