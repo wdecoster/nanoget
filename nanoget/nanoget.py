@@ -182,6 +182,11 @@ def extractFromBam(params):
 
 
 def getPID(read):
+    '''
+    Return the percent identity of a read
+    based on the NM tag if present,
+    if not calculate from MD tag and CIGAR string
+    '''
     try:
         return 100 * (1 - read.get_tag("NM") / read.query_alignment_length)
     except KeyError:
@@ -189,10 +194,16 @@ def getPID(read):
 
 
 def parseMD(MDlist):
+    '''
+    Parse MD string to get number of mismatches and deletions
+    '''
     return sum([len(item) for item in re.split('[0-9^]', MDlist)])
 
 
 def parseCIGAR(cigartuples):
+    '''
+    Count the insertions in the read using the CIGAR string
+    '''
     return sum([item[1] for item in cigartuples if item[0] == 1])
 
 
@@ -249,9 +260,14 @@ def processFastqPlain(fastq, threads):
 
 
 def extractFromFastq(rec):
+    '''
+    Worker function for extraction of metrics from a fastq record Seq object
+    If length 0, nanomath.aveQual will throw a ZeroDivisionError
+    Skipping the read is okay then.
+    '''
     try:
         return (nanomath.aveQual(rec.letter_annotations["phred_quality"]), len(rec))
-    except ZeroDivisionError:  # If length 0, nanomath.aveQual will throw a ZeroDivisionError
+    except ZeroDivisionError:
         pass
 
 
