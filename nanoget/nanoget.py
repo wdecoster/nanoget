@@ -135,8 +135,7 @@ def processBam(bam, threads):
         pool.terminate()
         pool.join()
         sys.exit()
-    # Output contains a tuple per worker
-    # Each tuple contains lists per metric
+    # 'output' contains a tuple per worker, each tuple contains lists per metric
     # Unpacked by following nested list comprehensions
     datadf = pd.DataFrame(data={
         "lengths": np.array([x for y in [elem[0] for elem in output] for x in y]),
