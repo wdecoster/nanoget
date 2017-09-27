@@ -78,7 +78,7 @@ def processSummary(summaryfile, readtype):
     except ValueError:
         logging.error(
             "Nanoget: did not find expected columns in summary file:\n {}.".format(', '.join(cols)))
-        sys.exit("ERROR: did not find expected columns in summary file:\n {}".format(', '.join(cols)))
+        sys.exit("ERROR: expected columns in summary file not found:\n {}".format(', '.join(cols)))
     datadf.columns = ["readIDs", "runIDs", "channelIDs", "time", "lengths", "quals"]
     a_time_stamps = np.array(datadf["time"], dtype='datetime64[s]')
     datadf["start_time"] = a_time_stamps - np.amin(a_time_stamps)
