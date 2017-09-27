@@ -177,13 +177,15 @@ def extractFromBam(params):
             lengths.append(read.query_length)
             alignedLengths.append(read.query_alignment_length)
             mapQ.append(read.mapping_quality)
-            try:
-                pID.append((1 - read.get_tag("NM") / read.query_alignment_length) * 100)
-            except KeyError:
-                pID.append((1 -
-                            (parseMD(read.get_tag("MD")) + parseCIGAR(read.cigartuples))
-                            / read.query_alignment_length) * 100)
+            pID.append(getPID(read))
     return (lengths, alignedLengths, quals, alignedQuals, mapQ, pID)
+
+
+def getPID(read):
+    try:
+        return 100 * (1 - read.get_tag("NM") / read.query_alignment_length)
+    except KeyError:
+        return 100 * (1 - (parseMD(read.get_tag("MD")) + parseCIGAR(read.cigartuples)) / read.query_alignment_length)
 
 
 def parseMD(MDlist):
