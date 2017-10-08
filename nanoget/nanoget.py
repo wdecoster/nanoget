@@ -290,6 +290,48 @@ def extract_from_fastq(rec):
         pass
 
 
+def process_fastq_full(fastq, threads):
+    '''
+    Extract from a fastq file:
+    -readname
+    -average and median quality
+    -read_lenght
+    '''
+    logging.info("Nanoget: Starting to collect full metrics from plain fastq file.")
+    inputfastq = handle_compressed_fastq(fastq)
+    pool = Pool(processes=threads)
+    try:
+        output = [results for results in pool.imap(
+            extract_all_from_fastq, SeqIO.parse(inputfastq, "fastq"))]
+    except KeyboardInterrupt:
+        sys.stderr.write("Terminating worker threads")
+        pool.terminate()
+        pool.join()
+        sys.exit()
+    logging.info("Nanoget: Finished collecting statistics from plain fastq file.")
+    return pd.DataFrame(data={
+        "readname": np.array([item[0] for item in output]),
+        "lengths": np.array([item[1] for item in output]),
+        "avequals": np.array([item[2] for item in output]),
+        "medquals": np.array([item[3] for item in output]),
+    })
+
+
+def extract_all_from_fastq(rec):
+    '''
+    Worker function for extraction of metrics from a fastq record Seq object
+    If length 0, nanomath.aveQual will throw a ZeroDivisionError
+    Skipping the read is okay then.
+    '''
+    try:
+        return (rec.id,
+                len(rec),
+                nanomath.ave_qual(rec.letter_annotations["phred_quality"]),
+                nanomath.med_qual(rec.letter_annotations["phred_quality"]))
+    except ZeroDivisionError:
+        pass
+
+
 def info_to_dict(info):
     '''
     Get the key-value pairs from the albacore/minknow fastq description and return as dictionary
