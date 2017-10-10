@@ -290,7 +290,7 @@ def extract_from_fastq(rec):
         pass
 
 
-def process_fastq_full(fastq, threads):
+def stream_fastq_full(fastq, threads):
     '''
     Extract from a fastq file:
     -readname
@@ -301,20 +301,20 @@ def process_fastq_full(fastq, threads):
     inputfastq = handle_compressed_fastq(fastq)
     pool = Pool(processes=threads)
     try:
-        output = [results for results in pool.imap(
-            extract_all_from_fastq, SeqIO.parse(inputfastq, "fastq"))]
+        for results in pool.imap(extract_all_from_fastq, SeqIO.parse(inputfastq, "fastq")):
+            yield results
     except KeyboardInterrupt:
         sys.stderr.write("Terminating worker threads")
         pool.terminate()
         pool.join()
         sys.exit()
     logging.info("Nanoget: Finished collecting statistics from plain fastq file.")
-    return pd.DataFrame(data={
-        "readname": np.array([item[0] for item in output]),
-        "lengths": np.array([item[1] for item in output]),
-        "avequals": np.array([item[2] for item in output]),
-        "medquals": np.array([item[3] for item in output]),
-    })
+    # return pd.DataFrame(data={
+    #     "readname": np.array([item[0] for item in output]),
+    #     "lengths": np.array([item[1] for item in output]),
+    #     "avequals": np.array([item[2] for item in output]),
+    #     "medquals": np.array([item[3] for item in output]),
+    # })
 
 
 def extract_all_from_fastq(rec):
@@ -327,7 +327,7 @@ def extract_all_from_fastq(rec):
         return (rec.id,
                 len(rec),
                 nanomath.ave_qual(rec.letter_annotations["phred_quality"]),
-                nanomath.med_qual(rec.letter_annotations["phred_quality"]))
+                nanomath.median_qual(rec.letter_annotations["phred_quality"]))
     except ZeroDivisionError:
         pass
 
