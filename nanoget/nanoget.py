@@ -265,7 +265,7 @@ def process_fastq_plain(fastq, threads):
     pool = Pool(processes=threads)
     try:
         output = [results for results in pool.imap(
-            extract_from_fastq, SeqIO.parse(inputfastq, "fastq"))]
+            extract_from_fastq, SeqIO.parse(inputfastq, "fastq")) if not results == None]
     except KeyboardInterrupt:
         sys.stderr.write("Terminating worker threads")
         pool.terminate()
@@ -287,7 +287,7 @@ def extract_from_fastq(rec):
     try:
         return (nanomath.aveQual(rec.letter_annotations["phred_quality"]), len(rec))
     except ZeroDivisionError:
-        pass
+        return None
 
 
 def stream_fastq_full(fastq, threads):
