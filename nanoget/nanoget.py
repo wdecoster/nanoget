@@ -265,7 +265,7 @@ def process_fastq_plain(fastq, threads):
     pool = Pool(processes=threads)
     try:
         output = [results for results in pool.imap(
-            extract_from_fastq, SeqIO.parse(inputfastq, "fastq")) if not results is None]
+            extract_from_fastq, SeqIO.parse(inputfastq, "fastq")) if results is not None]
     except KeyboardInterrupt:
         sys.stderr.write("Terminating worker threads")
         pool.terminate()
