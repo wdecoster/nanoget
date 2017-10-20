@@ -44,10 +44,10 @@ def get_input(source, files, threads=4, readtype="1D", combine="simple", names=N
     Multiple files of the same type can be used to extract info from
     '''
     processing_functions = {
-        'fastq': 'process_fastq_plain',
-        'bam': 'process_bam',
-        'summary': 'process_summary',
-        'fastq_rich': 'process_fastq_rich'}
+        'fastq': process_fastq_plain,
+        'bam': process_bam,
+        'summary': process_summary,
+        'fastq_rich': process_fastq_rich}
     datadf = combine_dfs(
         dfs=[processing_functions[source](inp, threads, readtype) for inp in files],
         names=names or files,
