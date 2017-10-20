@@ -145,7 +145,7 @@ def check_bam(bam):
     - exists
     - has an index (create if necessary)
     - is sorted by coordinate
-    - has at least one mapped readsimplify_get_input
+    - has at least one mapped read
     '''
     check_existance(bam)
     samfile = pysam.AlignmentFile(bam, "rb")
