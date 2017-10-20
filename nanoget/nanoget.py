@@ -339,15 +339,9 @@ def stream_fastq_full(fastq, threads):
     '''
     logging.info("Nanoget: Starting to collect full metrics from plain fastq file.")
     inputfastq = handle_compressed_fastq(fastq)
-    pool = Pool(max_workers=threads)
-    try:
-        for results in pool.map(extract_all_from_fastq, SeqIO.parse(inputfastq, "fastq")):
+    with cfutures.ProcessPoolExecutor(max_workers=threads) as executor:
+        for results in executor.map(extract_all_from_fastq, SeqIO.parse(inputfastq, "fastq")):
             yield results
-    except KeyboardInterrupt:
-        sys.stderr.write("Terminating worker threads")
-        pool.terminate()
-        pool.join()
-        sys.exit()
     logging.info("Nanoget: Finished collecting statistics from plain fastq file.")
 
 
