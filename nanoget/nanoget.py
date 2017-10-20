@@ -343,12 +343,6 @@ def stream_fastq_full(fastq, threads):
         pool.join()
         sys.exit()
     logging.info("Nanoget: Finished collecting statistics from plain fastq file.")
-    # return pd.DataFrame(data={
-    #     "readname": np.array([item[0] for item in output]),
-    #     "lengths": np.array([item[1] for item in output]),
-    #     "avequals": np.array([item[2] for item in output]),
-    #     "medquals": np.array([item[3] for item in output]),
-    # })
 
 
 def extract_all_from_fastq(rec):
