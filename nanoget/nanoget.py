@@ -198,9 +198,9 @@ def process_bam(bam, threads, readtype):
     logging.info("Nanoget: Starting to collect statistics from bam file.")
     samfile = check_bam(bam)
     chromosomes = samfile.references
-    with cfutures.ProcessPoolExecutor(max_workers=threads) as executor:
-        output = [results for results in executor.map(
-            partial(extract_from_bam, bam=bam), chromosomes)]
+    params = zip([bam] * len(chromosomes), chromosomes)
+    with cfutures.ProcessPoolExecutor() as executor:
+        output = [results for results in executor.map(extract_from_bam, params)]
     # 'output' contains a tuple per worker, each tuple contains lists per metric
     # Unpacked by following nested list comprehensions
     datadf = pd.DataFrame(data={
@@ -216,7 +216,7 @@ def process_bam(bam, threads, readtype):
     return datadf
 
 
-def extract_from_bam(bam, chromosome):
+def extract_from_bam(params):
     '''
     Worker function per chromosome
     loop over a bam file and create tuple with lists containing metrics:
@@ -227,6 +227,7 @@ def extract_from_bam(bam, chromosome):
     -mapping qualities
     -edit distances to the reference genome scaled by read length
     '''
+    bam, chromosome = params
     samfile = pysam.AlignmentFile(bam, "rb")
     lengths = []
     alignedLengths = []
@@ -308,7 +309,7 @@ def process_fastq_plain(fastq, threads, readtype):
     '''
     logging.info("Nanoget: Starting to collect statistics from plain fastq file.")
     inputfastq = handle_compressed_fastq(fastq)
-    with cfutures.ProcessPoolExecutor(max_workers=threads) as executor:
+    with cfutures.ProcessPoolExecutor() as executor:
         output = [results for results in executor.map(
             extract_from_fastq, SeqIO.parse(inputfastq, "fastq")) if results is not None]
     logging.info("Nanoget: Finished collecting statistics from plain fastq file.")
