@@ -72,6 +72,9 @@ def get_input(source, files, threads=4, readtype="1D", combine="simple", names=N
                 partial(proc_functions[source], threads=threadsleft, readtype=readtype), files)],
             names=names or files,
             method=combine)
+    if "time" in datadf:
+        a_time_stamps = np.array(datadf["time"], dtype='datetime64[s]')
+        datadf["start_time"] = a_time_stamps - np.amin(a_time_stamps)
     logging.info("Nanoget: Gathered all metrics")
     return datadf
 
@@ -150,11 +153,9 @@ def process_summary(summaryfile, threads, readtype):
         )
     except ValueError:
         logging.error(
-            "Nanoget: did not find expected columns in summary file:\n {}.".format(', '.join(cols)))
+            "Nanoget: did not find expected columns in summary file:\n {}".format(', '.join(cols)))
         sys.exit("ERROR: expected columns in summary file not found:\n {}".format(', '.join(cols)))
     datadf.columns = ["readIDs", "runIDs", "channelIDs", "time", "lengths", "quals"]
-    a_time_stamps = np.array(datadf["time"], dtype='datetime64[s]')
-    datadf["start_time"] = a_time_stamps - np.amin(a_time_stamps)
     logging.info("Nanoget: Finished collecting statistics from summary file.")
     return datadf[datadf["lengths"] != 0]
 
@@ -402,13 +403,12 @@ def process_fastq_rich(fastq, threads, readtype):
             sys.exit("Unexpected fastq identifier:\n{}\n\n \
             missing one or more of expected fields 'ch', 'start_time' or 'runid'".format(
                 record.description))
-    a_time_stamps = np.array(time_stamps, dtype='datetime64[s]')
     datadf = pd.DataFrame(data={
         "lengths": np.array(lengths),
         "quals": np.array(quals),
         "channelIDs": np.int16(channels),
         "runIDs": np.array(runids),
-        "start_time": a_time_stamps - np.amin(a_time_stamps)
+        "time": np.array(time_stamps)
     })
     logging.info("Nanoget: Finished collecting statistics from rich fastq file.")
     return datadf
