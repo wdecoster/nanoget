@@ -29,7 +29,7 @@ import numpy as np
 from functools import partial
 from Bio import SeqIO
 import concurrent.futures as cfutures
-import dateutil.parser
+from dateutil.parser import parse as dparse
 import pysam
 import nanomath
 
@@ -376,7 +376,7 @@ def process_fastq_rich(fastq, threads, readtype):
     ch=<int> [159]
     start_time=<timestamp> [2016-07-15T14:23:22Z]  # UTC ISO 8601 ISO 3339 timestamp
     Z indicates UTC time, T is the delimiter between date expression and time expression
-    dateutil.parser.parse("2016-07-15T14:23:22Z")
+    dateutil.parser.parse("2016-07-15T14:23:22Z") imported as dparse
     -> datetime.datetime(2016, 7, 15, 14, 23, 22, tzinfo=tzutc())
     '''
     logging.info("Nanoget: Starting to collect statistics from rich fastq file.")
@@ -392,7 +392,7 @@ def process_fastq_rich(fastq, threads, readtype):
             lengths.append(len(record))
             read_info = info_to_dict(record.description)
             channels.append(read_info["ch"])
-            time_stamps.append(dateutil.parser.parse(read_info["start_time"]))
+            time_stamps.append(dparse(read_info["start_time"]))
             runids.append(read_info["runid"])
         except ZeroDivisionError:  # If length 0, nanomath.aveQual will throw a ZeroDivisionError
             pass
@@ -411,6 +411,42 @@ def process_fastq_rich(fastq, threads, readtype):
     })
     logging.info("Nanoget: Finished collecting statistics from rich fastq file.")
     return datadf
+
+
+def fq_minimal(fq):
+    '''
+    Quickly parse a fasta/fastq file - but makes expectations on the file format
+    There will be dragons if unexpected format is used
+    Expects a fastq_rich format, but extracts less
+    Returns
+    - timestamp
+    - length
+    '''
+    try:
+        while True:
+            time = next(fq)[1:].split(" ")[4][11:-1]
+            length = len(next(fq))
+            next(fq)
+            next(fq)
+            yield time, length
+    except StopIteration:
+        yield None
+
+
+def process_fastq_minimal(fastq, threads, readtype):
+    '''
+    Swiftly extract minimal features from a rich fastq file:
+    - length
+    - time
+    '''
+    infastq = handle_compressed_fastq(fastq)
+    df = pd.DataFrame(
+        data=[rec for rec in fq_minimal(infastq) if rec],
+        columns=["timestamp", "lengths"]
+    )
+    df["time_arr"] = pd.Series(df["timestamp"], dtype="datetime64[ns]")
+    df["starttime"] = df["time_arr"] - df["time_arr"].min()
+    return df[["start_time", "lengths"]]
 
 
 # To ensure backwards compatilibity, for a while, keeping exposed function names duplicated:
