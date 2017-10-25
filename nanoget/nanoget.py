@@ -60,7 +60,8 @@ def get_input(source, files, threads=4, readtype="1D", combine="simple", names=N
         'fastq': process_fastq_plain,
         'bam': process_bam,
         'summary': process_summary,
-        'fastq_rich': process_fastq_rich}
+        'fastq_rich': process_fastq_rich,
+        'fastq_minimal' process_fastq_minimal}
     filethreads = min(len(files), threads)
     threadsleft = threads - filethreads
     if threadsleft > len(files):
