@@ -413,6 +413,40 @@ def process_fastq_rich(fastq, threads, readtype):
     return datadf
 
 
+def fq_minimal(fq):
+    '''
+    Quickly parse a fasta/fastq file - but makes expectations on the file format
+    There will be dragons if unexpected format is used
+    Expects a fastq_rich format, but extracts less
+    Returns
+    - timestamp
+    - length
+    '''
+    try:
+        while True:
+            time = next(fq)[1:].split(" ")[4][11:-1]
+            length = len(next(fq))
+            next(fq)
+            next(fq)
+            yield time, length
+    except StopIteration:
+        yield None
+
+
+def process_fastq_minimal(fastq, threads, readtype):
+    '''
+    Swiftly extract minimal features from a rich fastq file:
+    - length
+    - time
+    '''
+    infastq = handle_compressed_fastq(fastq)
+    df = pd.DataFrame(
+        data=[rec for rec in fq_minimal(infastq) if rec],
+        columns=["timestamp", "length"]
+    )
+    return df
+
+
 # To ensure backwards compatilibity, for a while, keeping exposed function names duplicated:
 processSummary = process_summary
 processBam = process_bam
