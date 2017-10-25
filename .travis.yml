@@ -10,3 +10,6 @@ python:
 install: "pip install nanoget"
 # command to run tests
 script: python -c "import nanoget"
+
+notifications:
+  email: false
