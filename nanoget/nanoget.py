@@ -442,9 +442,11 @@ def process_fastq_minimal(fastq, threads, readtype):
     infastq = handle_compressed_fastq(fastq)
     df = pd.DataFrame(
         data=[rec for rec in fq_minimal(infastq) if rec],
-        columns=["timestamp", "length"]
+        columns=["timestamp", "lengths"]
     )
-    return df
+    df["time_arr"] = pd.Series(df["timestamp"], dtype="datetime64[ns]")
+    df["starttime"] = df["time_arr"] - df["time_arr"].min()
+    return df[["start_time". "lengths"]]
 
 
 # To ensure backwards compatilibity, for a while, keeping exposed function names duplicated:
