@@ -60,7 +60,8 @@ def get_input(source, files, threads=4, readtype="1D", combine="simple", names=N
         'fastq': process_fastq_plain,
         'bam': process_bam,
         'summary': process_summary,
-        'fastq_rich': process_fastq_rich}
+        'fastq_rich': process_fastq_rich,
+        'fastq_minimal': process_fastq_minimal}
     filethreads = min(len(files), threads)
     threadsleft = threads - filethreads
     if threadsleft > len(files):
@@ -411,6 +412,43 @@ def process_fastq_rich(fastq, threads, readtype):
     })
     logging.info("Nanoget: Finished collecting statistics from rich fastq file.")
     return datadf
+
+
+def readfq(fp):
+    '''
+    Generator function adapted from https://github.com/lh3/readfq
+    '''
+    last = None  # this is a buffer keeping the last unprocessed line
+    while True:  # mimic closure; is it a bad idea?
+        if not last:  # the first record or a record following a fastq
+            for l in fp:  # search for the start of the next record
+                if l[0] in '>@':  # fasta/q header line
+                    last = l[:-1]  # save this line
+                    break
+        if not last:
+            break
+        name, seqs, last = last[1:].partition(" ")[0], [], None
+        for l in fp:  # read the sequence
+            if l[0] in '@+>':
+                last = l[:-1]
+                break
+            seqs.append(l[:-1])
+        if not last or last[0] != '+':  # this is a fasta record
+            yield name, ''.join(seqs), None  # yield a fasta record
+            if not last:
+                break
+        else:  # this is a fastq record
+            seq, leng, seqs = ''.join(seqs), 0, []
+            for l in fp:  # read the quality
+                seqs.append(l[:-1])
+                leng += len(l) - 1
+                if leng >= len(seq):  # have read enough quality
+                    last = None
+                    yield name, seq, ''.join(seqs)  # yield a fastq record
+                    break
+            if last:  # reach EOF before reading enough quality
+                yield name, seq, None  # yield a fasta record instead
+                break
 
 
 def fq_minimal(fq):
