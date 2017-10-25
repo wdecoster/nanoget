@@ -29,7 +29,7 @@ import numpy as np
 from functools import partial
 from Bio import SeqIO
 import concurrent.futures as cfutures
-import dateutil.parser
+from dateutil.parser import parse as dparse
 import pysam
 import nanomath
 
@@ -376,7 +376,7 @@ def process_fastq_rich(fastq, threads, readtype):
     ch=<int> [159]
     start_time=<timestamp> [2016-07-15T14:23:22Z]  # UTC ISO 8601 ISO 3339 timestamp
     Z indicates UTC time, T is the delimiter between date expression and time expression
-    dateutil.parser.parse("2016-07-15T14:23:22Z")
+    dateutil.parser.parse("2016-07-15T14:23:22Z") imported as dparse
     -> datetime.datetime(2016, 7, 15, 14, 23, 22, tzinfo=tzutc())
     '''
     logging.info("Nanoget: Starting to collect statistics from rich fastq file.")
@@ -392,7 +392,7 @@ def process_fastq_rich(fastq, threads, readtype):
             lengths.append(len(record))
             read_info = info_to_dict(record.description)
             channels.append(read_info["ch"])
-            time_stamps.append(dateutil.parser.parse(read_info["start_time"]))
+            time_stamps.append(dparse(read_info["start_time"]))
             runids.append(read_info["runid"])
         except ZeroDivisionError:  # If length 0, nanomath.aveQual will throw a ZeroDivisionError
             pass
