@@ -29,7 +29,6 @@ import numpy as np
 from functools import partial
 from Bio import SeqIO
 import concurrent.futures as cfutures
-from dateutil.parser import parse as dparse
 import pysam
 import nanomath
 
@@ -75,6 +74,11 @@ def get_input(source, files, threads=4, readtype="1D", combine="simple", names=N
     if "time" in datadf:
         a_time_stamps = np.array(datadf["time"], dtype='datetime64[s]')
         datadf["start_time"] = a_time_stamps - np.amin(a_time_stamps)
+        datadf.drop("time", axis=1, inplace=True)
+    if "timestamp" in datadf:
+        datadf["time_arr"] = pd.Series(datadf["timestamp"], dtype="datetime64[ns]")
+        datadf["start_time"] = datadf["time_arr"] - datadf["time_arr"].min()
+        datadf.drop(["timestamp", "time_arr"], axis=1, inplace=True)
     logging.info("Nanoget: Gathered all metrics")
     return datadf
 
@@ -394,7 +398,7 @@ def process_fastq_rich(fastq, threads, readtype):
             lengths.append(len(record))
             read_info = info_to_dict(record.description)
             channels.append(read_info["ch"])
-            time_stamps.append(dparse(read_info["start_time"]))
+            time_stamps.append(read_info["start_time"])
             runids.append(read_info["runid"])
         except ZeroDivisionError:  # If length 0, nanomath.aveQual will throw a ZeroDivisionError
             pass
@@ -408,7 +412,7 @@ def process_fastq_rich(fastq, threads, readtype):
         "quals": np.array(quals),
         "channelIDs": np.int16(channels),
         "runIDs": np.array(runids),
-        "time": np.array(time_stamps)
+        "timestamp": np.array(time_stamps)
     })
     logging.info("Nanoget: Finished collecting statistics from rich fastq file.")
     return datadf
@@ -482,9 +486,7 @@ def process_fastq_minimal(fastq, threads, readtype):
         data=[rec for rec in fq_minimal(infastq) if rec],
         columns=["timestamp", "lengths"]
     )
-    df["time_arr"] = pd.Series(df["timestamp"], dtype="datetime64[ns]")
-    df["start_time"] = df["time_arr"] - df["time_arr"].min()
-    return df[["start_time", "lengths"]]
+    return df[["timestamp", "lengths"]]
 
 
 # To ensure backwards compatilibity, for a while, keeping exposed function names duplicated:
