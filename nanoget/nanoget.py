@@ -167,6 +167,7 @@ def process_summary(summaryfile, **kwargs):
                 "sequence_length_2d", "mean_qscore_2d"]
     if kwargs["barcoded"]:
         cols.append("barcode_arrangement")
+        logging.info("Nanoget: Extracting barcodes from summary.")
     try:
         datadf = pd.read_csv(
             filepath_or_buffer=summaryfile,
@@ -177,7 +178,10 @@ def process_summary(summaryfile, **kwargs):
         logging.error(
             "Nanoget: did not find expected columns in summary file:\n {}".format(', '.join(cols)))
         sys.exit("ERROR: expected columns in summary file not found:\n {}".format(', '.join(cols)))
-    datadf.columns = ["readIDs", "runIDs", "channelIDs", "time", "lengths", "quals"]
+    if kwargs["barcoded"]:
+        datadf.columns = ["readIDs", "runIDs", "channelIDs", "time", "lengths", "quals", "barcode"]
+    else:
+        datadf.columns = ["readIDs", "runIDs", "channelIDs", "time", "lengths", "quals"]
     logging.info("Nanoget: Finished collecting statistics from summary file.")
     return datadf[datadf["lengths"] != 0]
 
