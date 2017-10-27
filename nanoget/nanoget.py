@@ -167,7 +167,7 @@ def process_summary(summaryfile, **kwargs):
                 "sequence_length_2d", "mean_qscore_2d"]
     if kwargs["barcoded"]:
         cols.append("barcode_arrangement")
-        logging.info("Nanoget: Extracting barcodes from summary.")
+        logging.info("Nanoget: Extracting metrics per barcode.")
     try:
         datadf = pd.read_csv(
             filepath_or_buffer=summaryfile,
