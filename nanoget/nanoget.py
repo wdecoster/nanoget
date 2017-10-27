@@ -72,7 +72,7 @@ def get_input(source, files, threads=4, readtype="1D", combine="simple", names=N
                     proc_functions[source],
                     threads=threadsleft,
                     readtype=readtype,
-                    barcoded=False), files)],
+                    barcoded=barcoded), files)],
             names=names or files,
             method=combine)
     if "time" in datadf:
