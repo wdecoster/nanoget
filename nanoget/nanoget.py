@@ -158,7 +158,7 @@ def process_summary(summaryfile, **kwargs):
     '''
     logging.info("Nanoget: Staring to collect statistics from summary file.")
     check_existance(summaryfile)
-    logging.info("Collecting statistics for {} sequencing".format(kwargs["readtype"]))
+    logging.info("Nanoget: Collecting statistics for {} sequencing".format(kwargs["readtype"]))
     if kwargs["readtype"] == "1D":
         cols = ["read_id", "run_id", "channel", "start_time",
                 "sequence_length_template", "mean_qscore_template"]
