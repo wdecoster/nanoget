@@ -83,7 +83,7 @@ def get_input(source, files, threads=4, readtype="1D", combine="simple", names=N
         datadf["time_arr"] = pd.Series(datadf["timestamp"], dtype="datetime64[ns]")
         datadf["start_time"] = datadf["time_arr"] - datadf["time_arr"].min()
         datadf.drop(["timestamp", "time_arr"], axis=1, inplace=True)
-    logging.info("Nanoget: Gathered all metrics")
+    logging.info("Nanoget: Gathered all metrics of {} reads".format(len(datadf)))
     return datadf
 
 
