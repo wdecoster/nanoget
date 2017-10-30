@@ -314,11 +314,11 @@ def handle_compressed_fastq(inputfq):
         check_existance(inputfq)
         if inputfq.endswith('.gz'):
             import gzip
-            logging.info("Nanoget: Decompressing gzipped fastq {}.".format(inputfq))
+            logging.info("Nanoget: Decompressing gzipped fastq {}".format(inputfq))
             return gzip.open(inputfq, 'rt')
         elif inputfq.endswith('.bz2'):
             import bz2
-            logging.info("Nanoget: Decompressing bz2 compressed fastq {}.".format(inputfq))
+            logging.info("Nanoget: Decompressing bz2 compressed fastq {}".format(inputfq))
             return bz2.BZ2File(inputfq, 'rt')
         elif inputfq.endswith(('.fastq', '.fq', '.bgz')):
             return open(inputfq, 'r')
