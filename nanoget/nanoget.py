@@ -330,7 +330,6 @@ def handle_compressed_fastq(inputfq):
                         supported formats for --fastq are .gz, .bz2, .bgz, .fastq and .fq''')
 
 
-@profile
 def process_fastq_plain(fastq, **kwargs):
     '''
     Processing function
