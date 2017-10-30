@@ -31,8 +31,10 @@ from Bio import SeqIO
 import concurrent.futures as cfutures
 import pysam
 import nanomath
+from memory_profiler import profile
 
 
+@profile
 def get_input(source, files, threads=4, readtype="1D", combine="simple", names=None, barcoded=False):
     '''
     Get input and process accordingly.
