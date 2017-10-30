@@ -330,6 +330,7 @@ def handle_compressed_fastq(inputfq):
                         supported formats for --fastq are .gz, .bz2, .bgz, .fastq and .fq''')
 
 
+@profile
 def process_fastq_plain(fastq, **kwargs):
     '''
     Processing function
@@ -349,6 +350,7 @@ def process_fastq_plain(fastq, **kwargs):
     })
 
 
+@profile
 def extract_from_fastq(rec):
     '''
     Worker function for extraction of metrics from a fastq record Seq object
