@@ -350,7 +350,6 @@ def process_fastq_plain(fastq, **kwargs):
     })
 
 
-@profile
 def extract_from_fastq(rec):
     '''
     Worker function for extraction of metrics from a fastq record Seq object
