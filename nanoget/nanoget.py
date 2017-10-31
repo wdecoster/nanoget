@@ -323,9 +323,9 @@ def handle_compressed_fastq(inputfq):
         elif inputfq.endswith(('.fastq', '.fq', '.bgz')):
             return open(inputfq, 'r')
         else:
-            logging.error("INPUT ERROR: Unrecognized file extension")
-            sys.exit('''INPUT ERROR: Unrecognized file extension\n,
-                        supported formats for --fastq are .gz, .bz2, .bgz, .fastq and .fq''')
+            logging.error("INPUT ERROR: Unrecognized file extension {}".format(inputfq))
+            sys.exit('INPUT ERROR:\nUnrecognized file extension in {}\n'
+                     'Supported are .gz, .bz2, .bgz, .fastq and .fq'.format(inputfq))
 
 
 def process_fastq_plain(fastq, **kwargs):
