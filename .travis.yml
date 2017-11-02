@@ -9,7 +9,7 @@ python:
 # command to install dependencies
 install: "pip install nanoget"
 # command to run tests
-script: python -c "import nanoget"
+script: bash scripts/test.sh
 
 notifications:
   email: false

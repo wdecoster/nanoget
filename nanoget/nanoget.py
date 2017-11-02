@@ -511,8 +511,20 @@ def process_fastq_minimal(fastq, **kwargs):
     return df[["timestamp", "lengths"]]
 
 
+def run_tests():
+    get_input("bam", ["nanotest/alignment.bam"])
+    get_input("summary", ["nanotest/sequencing_summary.txt"], combine="track")
+    get_input("fastq_rich", ["nanotest/reads.fastq.gz"])
+    get_input("fastq_minimal", ["nanotest/reads.fastq.gz"])
+    get_input("fastq", ["nanotest/reads.fastq.gz"])
+
+
 # To ensure backwards compatilibity, for a while, keeping exposed function names duplicated:
 processSummary = process_summary
 processBam = process_bam
 processFastqPlain = process_fastq_plain
 processFastq_rich = process_fastq_rich
+
+
+if __name__ == '__main__':
+    run_tests()
