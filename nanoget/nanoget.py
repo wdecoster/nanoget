@@ -84,7 +84,11 @@ def get_input(source, files, threads=4, readtype="1D", combine="simple", names=N
         datadf["start_time"] = datadf["time_arr"] - datadf["time_arr"].min()
         datadf.drop(["timestamp", "time_arr"], axis=1, inplace=True)
     logging.info("Nanoget: Gathered all metrics of {} reads".format(len(datadf)))
-    return datadf
+    if len(datadf) == 0:
+        logging.critical("Nanoget: no reads retrieved.".format(len(datadf)))
+        sys.exit("Fatal: No reads found in input.")
+    else:
+        return datadf
 
 
 def combine_dfs(dfs, names, method):
