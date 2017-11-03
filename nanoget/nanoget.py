@@ -1,4 +1,3 @@
-# wdecoster
 '''
 This module provides functions to extract useful metrics
 from Oxford Nanopore sequencing reads and alignments.
@@ -231,17 +230,9 @@ def process_bam(bam, **kwargs):
     chromosomes = samfile.references
     params = zip([bam] * len(chromosomes), chromosomes)
     with cfutures.ProcessPoolExecutor() as executor:
-        output = [results for results in executor.map(extract_from_bam, params)]
-    # 'output' contains a tuple per worker, each tuple contains lists per metric
-    # Unpacked by following nested list comprehensions
-    datadf = pd.DataFrame(data={
-        "lengths": np.array([x for y in [elem[0] for elem in output] for x in y]),
-        "aligned_lengths": np.array([x for y in [elem[1] for elem in output] for x in y]),
-        "quals": np.array([x for y in [elem[2] for elem in output] for x in y]),
-        "aligned_quals": np.array([x for y in [elem[3] for elem in output] for x in y]),
-        "mapQ": np.array([x for y in [elem[4] for elem in output] for x in y]),
-        "percentIdentity": np.array([x for y in [elem[5] for elem in output] for x in y]),
-    })
+        datadf = pd.DataFrame(
+            data=[res for sublist in executor.map(extract_from_bam, params) for res in sublist],
+            columns=["quals", "aligned_quals", "lengths", "aligned_lengths", "mapQ", "percentIdentity"])
     logging.info("Nanoget: bam contains {} primary alignments.".format(datadf["lengths"].size))
     logging.info("Nanoget: Finished collecting statistics from bam file.")
     return datadf
@@ -250,31 +241,25 @@ def process_bam(bam, **kwargs):
 def extract_from_bam(params):
     '''
     Worker function per chromosome
-    loop over a bam file and create tuple with lists containing metrics:
-    -lengths
-    -aligned lengths
+    loop over a bam file and create list with tuples containing metrics:
     -qualities
     -aligned qualities
+    -lengths
+    -aligned lengths
     -mapping qualities
     -edit distances to the reference genome scaled by read length
     '''
     bam, chromosome = params
     samfile = pysam.AlignmentFile(bam, "rb")
-    lengths = []
-    alignedLengths = []
-    quals = []
-    alignedQuals = []
-    mapQ = []
-    pID = []
-    for read in samfile.fetch(reference=chromosome, multiple_iterators=True):
-        if not read.is_secondary:
-            quals.append(nanomath.aveQual(read.query_qualities))
-            alignedQuals.append(nanomath.aveQual(read.query_alignment_qualities))
-            lengths.append(read.query_length)
-            alignedLengths.append(read.query_alignment_length)
-            mapQ.append(read.mapping_quality)
-            pID.append(get_pID(read))
-    return (lengths, alignedLengths, quals, alignedQuals, mapQ, pID)
+    return [
+        (nanomath.aveQual(read.query_qualities),
+         nanomath.aveQual(read.query_alignment_qualities),
+         read.query_length,
+         read.query_alignment_length,
+         read.mapping_quality,
+         get_pID(read))
+        for read in samfile.fetch(reference=chromosome, multiple_iterators=True)
+        if not read.is_secondary]
 
 
 def get_pID(read):
