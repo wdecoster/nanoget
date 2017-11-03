@@ -1,4 +1,4 @@
-'''
+"""
 This module provides functions to extract useful metrics
 from Oxford Nanopore sequencing reads and alignments.
 
@@ -16,11 +16,11 @@ Data can be presented in the following formats, using the following functions:
 Fastq files can be compressed using gzip, bzip2 or bgzip.
 The data is returned as a pandas DataFrame with standardized headernames for convenient extraction.
 The functions perform logging while being called and extracting data.
-'''
+"""
 
 from __future__ import division
 import sys
-import os
+from os import path as opath
 import logging
 import re
 import pandas as pd
@@ -33,8 +33,8 @@ import nanomath
 
 
 def get_input(source, files, threads=4, readtype="1D", combine="simple", names=None, barcoded=False):
-    '''
-    Get input and process accordingly.
+    """Get input and process accordingly.
+
     Data can be:
     - a uncompressed, bgzip, bzip2 or gzip compressed fastq file
     - a rich fastq containing additional key=value information in the description,
@@ -53,7 +53,7 @@ def get_input(source, files, threads=4, readtype="1D", combine="simple", names=N
       field is created with the name of the dataset
     - names: if combine="track", the names to be used for the datasets. Needs to have same length as
       files, or None
-    '''
+    """
     proc_functions = {
         'fastq': process_fastq_plain,
         'bam': process_bam,
@@ -88,6 +88,10 @@ def get_input(source, files, threads=4, readtype="1D", combine="simple", names=N
 
 
 def combine_dfs(dfs, names, method):
+    """Combine dataframes.
+
+    Combination is either done simple by just concatenating the DataFrames
+    or performs tracking by adding the name of the dataset as a column."""
     if method == "track":
         res = []
         for df, identifier in zip(dfs, names):
@@ -99,17 +103,15 @@ def combine_dfs(dfs, names, method):
 
 
 def check_existance(f):
-    '''
-    Check if the file supplied as input exists
-    '''
-    if not os.path.isfile(f):
+    """Check if the file supplied as input exists."""
+    if not opath.isfile(f):
         logging.error("Nanoget: File provided doesn't exist or the path is incorrect: {}".format(f))
         sys.exit("File provided doesn't exist or the path is incorrect: {}".format(f))
 
 
 def process_summary(summaryfile, **kwargs):
-    '''
-    Extracting information from an albacore summary file.
+    """Extracting information from an albacore summary file.
+
     Only reads which have a >0 length are returned.
 
     The fields below may or may not exist, depending on the type of sequencing performed.
@@ -155,7 +157,7 @@ def process_summary(summaryfile, **kwargs):
     36    rear_foundseq_length
     37    kit
     38    variant
-    '''
+    """
     logging.info("Nanoget: Staring to collect statistics from summary file.")
     check_existance(summaryfile)
     logging.info("Nanoget: Collecting statistics for {} sequencing".format(kwargs["readtype"]))
@@ -187,13 +189,14 @@ def process_summary(summaryfile, **kwargs):
 
 
 def check_bam(bam):
-    '''
-    Check if bam file
+    """Check if bam file is valid.
+
+    Bam file should:
     - exists
     - has an index (create if necessary)
     - is sorted by coordinate
     - has at least one mapped read
-    '''
+    """
     check_existance(bam)
     samfile = pysam.AlignmentFile(bam, "rb")
     if not samfile.has_index():
@@ -212,7 +215,8 @@ def check_bam(bam):
 
 
 def process_bam(bam, **kwargs):
-    '''
+    """Combines metrics from bam after extraction.
+
     Processing function: calls pool of worker functions
     to extract from a bam file the following metrics:
     -lengths
@@ -222,7 +226,7 @@ def process_bam(bam, **kwargs):
     -mapping qualities
     -edit distances to the reference genome scaled by read length
     Returned in a pandas DataFrame
-    '''
+    """
     logging.info("Nanoget: Starting to collect statistics from bam file.")
     samfile = check_bam(bam)
     chromosomes = samfile.references
@@ -236,7 +240,8 @@ def process_bam(bam, **kwargs):
 
 
 def extract_from_bam(params):
-    '''
+    """Extracts metrics from bam.
+
     Worker function per chromosome
     loop over a bam file and create list with tuples containing metrics:
     -qualities
@@ -245,7 +250,7 @@ def extract_from_bam(params):
     -aligned lengths
     -mapping qualities
     -edit distances to the reference genome scaled by read length
-    '''
+    """
     bam, chromosome = params
     samfile = pysam.AlignmentFile(bam, "rb")
     return [
@@ -260,11 +265,11 @@ def extract_from_bam(params):
 
 
 def get_pID(read):
-    '''
-    Return the percent identity of a read
+    """Return the percent identity of a read.
+
     based on the NM tag if present,
     if not calculate from MD tag and CIGAR string
-    '''
+    """
     try:
         return 100 * (1 - read.get_tag("NM") / read.query_alignment_length)
     except KeyError:
@@ -273,25 +278,22 @@ def get_pID(read):
 
 
 def parse_MD(MDlist):
-    '''
-    Parse MD string to get number of mismatches and deletions
-    '''
+    """Parse MD string to get number of mismatches and deletions."""
     return sum([len(item) for item in re.split('[0-9^]', MDlist)])
 
 
 def parse_CIGAR(cigartuples):
-    '''
-    Count the insertions in the read using the CIGAR string
-    '''
+    """Count the insertions in the read using the CIGAR string."""
     return sum([item[1] for item in cigartuples if item[0] == 1])
 
 
 def handle_compressed_fastq(inputfq):
-    '''
+    """Return handles from compressed files according to extension.
+
     Check for which fastq input is presented and open a handle accordingly
     Can read from compressed files (gz, bz2, bgz) or uncompressed
     Relies on file extensions to recognize compression
-    '''
+    """
     check_existance(inputfq)
     if inputfq.endswith('.gz'):
         import gzip
@@ -310,12 +312,7 @@ def handle_compressed_fastq(inputfq):
 
 
 def process_fastq_plain(fastq, **kwargs):
-    '''
-    Processing function
-    Iterate over a fastq file and extract metrics
-    Parallelized, although there is not much to gain with using many threads
-    Saturation already starts at threads=3
-    '''
+    """Combine metrics extracted from a fastq file."""
     logging.info("Nanoget: Starting to collect statistics from plain fastq file.")
     inputfastq = handle_compressed_fastq(fastq)
     return pd.DataFrame(
@@ -325,11 +322,13 @@ def process_fastq_plain(fastq, **kwargs):
 
 
 def extract_from_fastq(fq):
-    '''
-    Worker function for extraction of metrics from a fastq record Seq object
-    If length 0, nanomath.aveQual will throw a ZeroDivisionError
+    """Extract metrics from a fastq file.
+
+    Return average quality and read length
+
+    If read length is 0, nanomath.aveQual will throw a ZeroDivisionError
     Skipping the read is okay then.
-    '''
+    """
     for rec in SeqIO.parse(fq, "fastq"):
         try:
             yield nanomath.aveQual(rec.letter_annotations["phred_quality"]), len(rec)
@@ -338,12 +337,13 @@ def extract_from_fastq(fq):
 
 
 def stream_fastq_full(fastq, threads):
-    '''
+    """Generator for returning metrics extracted from fastq.
+
     Extract from a fastq file:
     -readname
     -average and median quality
     -read_lenght
-    '''
+    """
     logging.info("Nanoget: Starting to collect full metrics from plain fastq file.")
     inputfastq = handle_compressed_fastq(fastq)
     with cfutures.ProcessPoolExecutor(max_workers=threads) as executor:
@@ -353,11 +353,13 @@ def stream_fastq_full(fastq, threads):
 
 
 def extract_all_from_fastq(rec):
-    '''
-    Worker function for extraction of metrics from a fastq record Seq object
+    """Extract metrics from a fastq file.
+
+    Return identifier, read length, average quality and median quality
+
     If length 0, nanomath.aveQual will throw a ZeroDivisionError
     Skipping the read is okay then.
-    '''
+    """
     try:
         return (rec.id,
                 len(rec),
@@ -368,14 +370,13 @@ def extract_all_from_fastq(rec):
 
 
 def info_to_dict(info):
-    '''
-    Get the key-value pairs from the albacore/minknow fastq description and return as dictionary
-    '''
+    """Get the key-value pairs from the albacore/minknow fastq description and return dict"""
     return {field.split('=')[0]: field.split('=')[1] for field in info.split(' ')[1:]}
 
 
 def process_fastq_rich(fastq, **kwargs):
-    '''
+    """Extract metrics from a richer fastq file.
+
     Extract information from fastq files generated by albacore or MinKNOW,
     containing richer information in the header (key-value pairs)
     read=<int> [72]
@@ -384,7 +385,7 @@ def process_fastq_rich(fastq, **kwargs):
     Z indicates UTC time, T is the delimiter between date expression and time expression
     dateutil.parser.parse("2016-07-15T14:23:22Z") imported as dparse
     -> datetime.datetime(2016, 7, 15, 14, 23, 22, tzinfo=tzutc())
-    '''
+    """
     logging.info("Nanoget: Starting to collect statistics from rich fastq file.")
     inputfastq = handle_compressed_fastq(fastq)
     res = []
@@ -410,9 +411,7 @@ def process_fastq_rich(fastq, **kwargs):
 
 
 def readfq(fp):
-    '''
-    Generator function adapted from https://github.com/lh3/readfq
-    '''
+    """Generator function adapted from https://github.com/lh3/readfq."""
     last = None  # this is a buffer keeping the last unprocessed line
     while True:  # mimic closure; is it a bad idea?
         if not last:  # the first record or a record following a fastq
@@ -447,14 +446,12 @@ def readfq(fp):
 
 
 def fq_minimal(fq):
-    '''
+    """Minimal fastq metrics extractor.
+
     Quickly parse a fasta/fastq file - but makes expectations on the file format
     There will be dragons if unexpected format is used
-    Expects a fastq_rich format, but extracts less
-    Returns
-    - timestamp
-    - length
-    '''
+    Expects a fastq_rich format, but extracts only timestamp and length
+    """
     try:
         while True:
             time = next(fq)[1:].split(" ")[4][11:-1]
@@ -467,11 +464,7 @@ def fq_minimal(fq):
 
 
 def process_fastq_minimal(fastq, **kwargs):
-    '''
-    Swiftly extract minimal features from a rich fastq file:
-    - length
-    - time
-    '''
+    """Swiftly extract minimal features (length and timestamp) from a rich fastq file"""
     infastq = handle_compressed_fastq(fastq)
     try:
         df = pd.DataFrame(
@@ -485,6 +478,7 @@ def process_fastq_minimal(fastq, **kwargs):
 
 
 def run_tests():
+    """Test functions using testdata from the nanotest repo."""
     get_input("bam", ["nanotest/alignment.bam"])
     get_input("summary", ["nanotest/sequencing_summary.txt"], combine="track")
     get_input("fastq_rich", ["nanotest/reads.fastq.gz"])
