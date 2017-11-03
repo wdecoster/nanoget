@@ -405,19 +405,16 @@ def process_fastq_rich(fastq, **kwargs):
     '''
     logging.info("Nanoget: Starting to collect statistics from rich fastq file.")
     inputfastq = handle_compressed_fastq(fastq)
-    lengths = []
-    quals = []
-    channels = []
-    time_stamps = []
-    runids = []
+    res = []
     for record in SeqIO.parse(inputfastq, "fastq"):
         try:
-            quals.append(nanomath.aveQual(record.letter_annotations["phred_quality"]))
-            lengths.append(len(record))
             read_info = info_to_dict(record.description)
-            channels.append(read_info["ch"])
-            time_stamps.append(read_info["start_time"])
-            runids.append(read_info["runid"])
+            res.append(
+                nanomath.aveQual(record.letter_annotations["phred_quality"]),
+                len(record),
+                read_info["ch"],
+                read_info["start_time"],
+                read_info["runid"])
         except ZeroDivisionError:  # If length 0, nanomath.aveQual will throw a ZeroDivisionError
             pass
         except KeyError:
@@ -425,15 +422,9 @@ def process_fastq_rich(fastq, **kwargs):
             sys.exit("Unexpected fastq identifier:\n{}\n\n \
             missing one or more of expected fields 'ch', 'start_time' or 'runid'".format(
                 record.description))
-    datadf = pd.DataFrame(data={
-        "lengths": np.array(lengths),
-        "quals": np.array(quals),
-        "channelIDs": np.int16(channels),
-        "runIDs": np.array(runids),
-        "timestamp": np.array(time_stamps)
-    })
-    logging.info("Nanoget: Finished collecting statistics from rich fastq file.")
-    return datadf
+    return pd.DataFrame(
+        data=res,
+        columns=["quals", "lengths", "channelIDs", "timestamp", "runIDs"])
 
 
 def readfq(fp):
