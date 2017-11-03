@@ -336,9 +336,7 @@ def process_fastq_plain(fastq, **kwargs):
     '''
     logging.info("Nanoget: Starting to collect statistics from plain fastq file.")
     inputfastq = handle_compressed_fastq(fastq)
-    with cfutures.ProcessPoolExecutor() as executor:
-        output = [results for results in executor.map(
-            extract_from_fastq, SeqIO.parse(inputfastq, "fastq")) if results is not None]
+    output = [results for results in extract_from_fastq(inputfastq) if results is not None]
     logging.info("Nanoget: Finished collecting statistics from plain fastq file.")
     return pd.DataFrame(data={
         "lengths": np.array([item[1] for item in output]),
@@ -346,16 +344,17 @@ def process_fastq_plain(fastq, **kwargs):
     })
 
 
-def extract_from_fastq(rec):
+def extract_from_fastq(fq):
     '''
     Worker function for extraction of metrics from a fastq record Seq object
     If length 0, nanomath.aveQual will throw a ZeroDivisionError
     Skipping the read is okay then.
     '''
-    try:
-        return (nanomath.aveQual(rec.letter_annotations["phred_quality"]), len(rec))
-    except ZeroDivisionError:
-        return None
+    for rec in SeqIO.parse(fq, "fastq"):
+        try:
+            yield nanomath.aveQual(rec.letter_annotations["phred_quality"]), len(rec)
+        except ZeroDivisionError:
+            yield None
 
 
 def stream_fastq_full(fastq, threads):
