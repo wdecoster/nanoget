@@ -66,13 +66,12 @@ def get_input(source, files, threads=4, readtype="1D", combine="simple", names=N
     if threadsleft > len(files):
         pass
     with cfutures.ProcessPoolExecutor(max_workers=filethreads) as executor:
+        extration_function = partial(proc_functions[source],
+                                     threads=threadsleft,
+                                     readtype=readtype,
+                                     barcoded=barcoded)
         datadf = combine_dfs(
-            dfs=[out for out in executor.map(
-                partial(
-                    proc_functions[source],
-                    threads=threadsleft,
-                    readtype=readtype,
-                    barcoded=barcoded), files)],
+            dfs=[out for out in executor.map(extration_function, files)],
             names=names or files,
             method=combine)
     if "time" in datadf:
