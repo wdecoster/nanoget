@@ -503,11 +503,15 @@ def process_fastq_minimal(fastq, **kwargs):
     - time
     '''
     infastq = handle_compressed_fastq(fastq)
-    df = pd.DataFrame(
-        data=[rec for rec in fq_minimal(infastq) if rec],
-        columns=["timestamp", "lengths"]
-    )
-    return df[["timestamp", "lengths"]]
+    try:
+        df = pd.DataFrame(
+            data=[rec for rec in fq_minimal(infastq) if rec],
+            columns=["timestamp", "lengths"]
+        )
+    except IndexError:
+        logging.error("Fatal: Incorrect file structure for fastq_minimal")
+        sys.exit("Error: file does not match expected structure for fastq_minimal")
+    return df
 
 
 def run_tests():
