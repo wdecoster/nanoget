@@ -336,12 +336,10 @@ def process_fastq_plain(fastq, **kwargs):
     '''
     logging.info("Nanoget: Starting to collect statistics from plain fastq file.")
     inputfastq = handle_compressed_fastq(fastq)
-    output = [results for results in extract_from_fastq(inputfastq) if results is not None]
-    logging.info("Nanoget: Finished collecting statistics from plain fastq file.")
-    return pd.DataFrame(data={
-        "lengths": np.array([item[1] for item in output]),
-        "quals": np.array([item[0] for item in output])
-    })
+    return pd.DataFrame(
+        data=[res for res in extract_from_fastq(inputfastq) if res],
+        columns=["quals", "lengths"]
+    )
 
 
 def extract_from_fastq(fq):
