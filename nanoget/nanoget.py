@@ -62,8 +62,6 @@ def get_input(source, files, threads=4, readtype="1D", combine="simple", names=N
         'fastq_minimal': process_fastq_minimal}
     filethreads = min(len(files), threads)
     threadsleft = threads - filethreads
-    if threadsleft > len(files):
-        pass
     with cfutures.ProcessPoolExecutor(max_workers=filethreads) as executor:
         extration_function = partial(proc_functions[source],
                                      threads=threadsleft,
@@ -234,7 +232,6 @@ def process_bam(bam, **kwargs):
             data=[res for sublist in executor.map(extract_from_bam, params) for res in sublist],
             columns=["quals", "aligned_quals", "lengths", "aligned_lengths", "mapQ", "percentIdentity"])
     logging.info("Nanoget: bam contains {} primary alignments.".format(datadf["lengths"].size))
-    logging.info("Nanoget: Finished collecting statistics from bam file.")
     return datadf
 
 
