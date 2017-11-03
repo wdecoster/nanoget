@@ -392,11 +392,11 @@ def process_fastq_rich(fastq, **kwargs):
         try:
             read_info = info_to_dict(record.description)
             res.append(
-                nanomath.aveQual(record.letter_annotations["phred_quality"]),
-                len(record),
-                read_info["ch"],
-                read_info["start_time"],
-                read_info["runid"])
+                (nanomath.aveQual(record.letter_annotations["phred_quality"]),
+                 len(record),
+                 read_info["ch"],
+                 read_info["start_time"],
+                 read_info["runid"]))
         except ZeroDivisionError:  # If length 0, nanomath.aveQual will throw a ZeroDivisionError
             pass
         except KeyError:
