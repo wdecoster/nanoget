@@ -176,8 +176,8 @@ def process_summary(summaryfile, **kwargs):
             usecols=cols,
         )
     except ValueError:
-        logging.error(
-            "Nanoget: did not find expected columns in summary file {}:\n {}".format(summaryfile, ', '.join(cols)))
+        logging.error("Nanoget: did not find expected columns in summary file {}:\n {}".format(
+            summaryfile, ', '.join(cols)))
         sys.exit("ERROR: expected columns in summary file {} not found:\n {}".format(
             summaryfile, ', '.join(cols)))
     if kwargs["barcoded"]:
