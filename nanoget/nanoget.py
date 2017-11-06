@@ -206,8 +206,8 @@ def check_bam(bam):
     if not samfile.header['HD']['SO'] == 'coordinate':
         logging.error("Nanoget: Bam file {} not sorted by coordinate!.".format(bam))
         sys.exit("Please use a bam file sorted by coordinate.")
-    logging.info("Nanoget: Bam file contains {} mapped and {} unmapped reads.".format(
-        samfile.mapped, samfile.unmapped))
+    logging.info("Nanoget: Bam file {} contains {} mapped and {} unmapped reads.".format(
+        bam, samfile.mapped, samfile.unmapped))
     if samfile.mapped == 0:
         logging.error("Nanoget: Bam file {} does not contain aligned reads.".format(bam))
         sys.exit("FATAL: not a single read was mapped in bam file {}".format(bam))
