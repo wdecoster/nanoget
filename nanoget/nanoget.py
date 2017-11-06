@@ -157,7 +157,7 @@ def process_summary(summaryfile, **kwargs):
     37    kit
     38    variant
     """
-    logging.info("Nanoget: Staring to collect statistics from summary file.")
+    logging.info("Nanoget: Staring to collect statistics from summary file {}".format(summaryfile))
     check_existance(summaryfile)
     logging.info("Nanoget: Collecting statistics for {} sequencing".format(kwargs["readtype"]))
     if kwargs["readtype"] == "1D":
@@ -177,13 +177,14 @@ def process_summary(summaryfile, **kwargs):
         )
     except ValueError:
         logging.error(
-            "Nanoget: did not find expected columns in summary file:\n {}".format(', '.join(cols)))
-        sys.exit("ERROR: expected columns in summary file not found:\n {}".format(', '.join(cols)))
+            "Nanoget: did not find expected columns in summary file {}:\n {}".format(summaryfile, ', '.join(cols)))
+        sys.exit("ERROR: expected columns in summary file {} not found:\n {}".format(
+            summaryfile, ', '.join(cols)))
     if kwargs["barcoded"]:
         datadf.columns = ["readIDs", "runIDs", "channelIDs", "time", "lengths", "quals", "barcode"]
     else:
         datadf.columns = ["readIDs", "runIDs", "channelIDs", "time", "lengths", "quals"]
-    logging.info("Nanoget: Finished collecting statistics from summary file.")
+    logging.info("Nanoget: Finished collecting statistics from summary file {}".format(summaryfile))
     return datadf[datadf["lengths"] != 0]
 
 
@@ -203,13 +204,13 @@ def check_bam(bam):
         samfile = pysam.AlignmentFile(bam, "rb")  # Need to reload the samfile after creating index
         logging.info("Nanoget: No index for bam file could be found, created index.")
     if not samfile.header['HD']['SO'] == 'coordinate':
-        logging.error("Nanoget: Bam file not sorted by coordinate!.")
+        logging.error("Nanoget: Bam file {} not sorted by coordinate!.".format(bam))
         sys.exit("Please use a bam file sorted by coordinate.")
     logging.info("Nanoget: Bam file contains {} mapped and {} unmapped reads.".format(
         samfile.mapped, samfile.unmapped))
     if samfile.mapped == 0:
-        logging.error("Nanoget: Bam file does not contain aligned reads.")
-        sys.exit("FATAL: not a single read was mapped in the bam file.")
+        logging.error("Nanoget: Bam file {} does not contain aligned reads.".format(bam))
+        sys.exit("FATAL: not a single read was mapped in bam file {}".format(bam))
     return samfile
 
 
@@ -226,7 +227,7 @@ def process_bam(bam, **kwargs):
     -edit distances to the reference genome scaled by read length
     Returned in a pandas DataFrame
     """
-    logging.info("Nanoget: Starting to collect statistics from bam file.")
+    logging.info("Nanoget: Starting to collect statistics from bam file {}.".format(bam))
     samfile = check_bam(bam)
     chromosomes = samfile.references
     params = zip([bam] * len(chromosomes), chromosomes)
@@ -236,7 +237,8 @@ def process_bam(bam, **kwargs):
             columns=["quals", "aligned_quals", "lengths",
                      "aligned_lengths", "mapQ", "percentIdentity"]
         ).dropna()
-    logging.info("Nanoget: bam contains {} primary alignments.".format(datadf["lengths"].size))
+    logging.info("Nanoget: bam {} contains {} primary alignments.".format(
+        bam, datadf["lengths"].size))
     return datadf
 
 
