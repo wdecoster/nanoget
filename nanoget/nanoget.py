@@ -18,7 +18,6 @@ The data is returned as a pandas DataFrame with standardized headernames for con
 The functions perform logging while being called and extracting data.
 """
 
-from __future__ import division
 import sys
 from os import path as opath
 import logging
