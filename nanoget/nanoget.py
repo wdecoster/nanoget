@@ -234,7 +234,9 @@ def process_bam(bam, **kwargs):
     with cfutures.ProcessPoolExecutor() as executor:
         datadf = pd.DataFrame(
             data=[res for sublist in executor.map(extract_from_bam, params) for res in sublist],
-            columns=["quals", "aligned_quals", "lengths", "aligned_lengths", "mapQ", "percentIdentity"])
+            columns=["quals", "aligned_quals", "lengths",
+                     "aligned_lengths", "mapQ", "percentIdentity"]
+        ).dropna()
     logging.info("Nanoget: bam contains {} primary alignments.".format(datadf["lengths"].size))
     return datadf
 
@@ -254,8 +256,8 @@ def extract_from_bam(params):
     bam, chromosome = params
     samfile = pysam.AlignmentFile(bam, "rb")
     return [
-        (nanomath.aveQual(read.query_qualities),
-         nanomath.aveQual(read.query_alignment_qualities),
+        (nanomath.ave_qual(read.query_qualities),
+         nanomath.ave_qual(read.query_alignment_qualities),
          read.query_length,
          read.query_alignment_length,
          read.mapping_quality,
@@ -318,22 +320,16 @@ def process_fastq_plain(fastq, **kwargs):
     return pd.DataFrame(
         data=[res for res in extract_from_fastq(inputfastq) if res],
         columns=["quals", "lengths"]
-    )
+    ).dropna()
 
 
 def extract_from_fastq(fq):
     """Extract metrics from a fastq file.
 
     Return average quality and read length
-
-    If read length is 0, nanomath.aveQual will throw a ZeroDivisionError
-    Skipping the read is okay then.
     """
     for rec in SeqIO.parse(fq, "fastq"):
-        try:
-            yield nanomath.aveQual(rec.letter_annotations["phred_quality"]), len(rec)
-        except ZeroDivisionError:
-            yield None
+        yield nanomath.ave_qual(rec.letter_annotations["phred_quality"]), len(rec)
 
 
 def stream_fastq_full(fastq, threads):
@@ -356,17 +352,11 @@ def extract_all_from_fastq(rec):
     """Extract metrics from a fastq file.
 
     Return identifier, read length, average quality and median quality
-
-    If length 0, nanomath.aveQual will throw a ZeroDivisionError
-    Skipping the read is okay then.
     """
-    try:
-        return (rec.id,
-                len(rec),
-                nanomath.ave_qual(rec.letter_annotations["phred_quality"]),
-                nanomath.median_qual(rec.letter_annotations["phred_quality"]))
-    except ZeroDivisionError:
-        pass
+    return (rec.id,
+            len(rec),
+            nanomath.ave_qual(rec.letter_annotations["phred_quality"]),
+            nanomath.median_qual(rec.letter_annotations["phred_quality"]))
 
 
 def info_to_dict(info):
@@ -393,13 +383,11 @@ def process_fastq_rich(fastq, **kwargs):
         try:
             read_info = info_to_dict(record.description)
             res.append(
-                (nanomath.aveQual(record.letter_annotations["phred_quality"]),
+                (nanomath.ave_qual(record.letter_annotations["phred_quality"]),
                  len(record),
                  read_info["ch"],
                  read_info["start_time"],
                  read_info["runid"]))
-        except ZeroDivisionError:  # If length 0, nanomath.aveQual will throw a ZeroDivisionError
-            pass
         except KeyError:
             logging.error("Nanoget: keyerror when processing record {}".format(record.description))
             sys.exit("Unexpected fastq identifier:\n{}\n\n \
@@ -407,7 +395,7 @@ def process_fastq_rich(fastq, **kwargs):
                 record.description))
     return pd.DataFrame(
         data=res,
-        columns=["quals", "lengths", "channelIDs", "timestamp", "runIDs"])
+        columns=["quals", "lengths", "channelIDs", "timestamp", "runIDs"]).dropna()
 
 
 def readfq(fp):
