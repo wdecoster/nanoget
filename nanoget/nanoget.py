@@ -398,9 +398,11 @@ def process_fastq_rich(fastq, **kwargs):
             sys.exit("Unexpected fastq identifier:\n{}\n\n \
             missing one or more of expected fields 'ch', 'start_time' or 'runid'".format(
                 record.description))
-    return pd.DataFrame(
+    df = pd.DataFrame(
         data=res,
         columns=["quals", "lengths", "channelIDs", "timestamp", "runIDs"]).dropna()
+    df["channelIDs"] = df["channelIDs"].astype("int64")
+    return df
 
 
 def readfq(fp):
