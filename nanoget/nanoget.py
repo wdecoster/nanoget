@@ -32,7 +32,8 @@ import pysam
 import nanomath
 
 
-def get_input(source, files, threads=4, readtype="1D", combine="simple", names=None, barcoded=False):
+def get_input(source, files, threads=4, readtype="1D",
+              combine="simple", names=None, barcoded=False):
     """Get input and process accordingly.
 
     Data can be:
@@ -234,7 +235,8 @@ def process_bam(bam, **kwargs):
     with cfutures.ProcessPoolExecutor() as executor:
         datadf = pd.DataFrame(
             data=[res for sublist in executor.map(extract_from_bam, params) for res in sublist],
-            columns=["quals", "aligned_quals", "lengths", "aligned_lengths", "mapQ", "percentIdentity"])
+            columns=["quals", "aligned_quals", "lengths",
+                     "aligned_lengths", "mapQ", "percentIdentity"])
     logging.info("Nanoget: bam contains {} primary alignments.".format(datadf["lengths"].size))
     return datadf
 
