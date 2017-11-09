@@ -18,7 +18,6 @@ The data is returned as a pandas DataFrame with standardized headernames for con
 The functions perform logging while being called and extracting data.
 """
 
-from __future__ import division
 import sys
 from os import path as opath
 import logging
@@ -159,7 +158,7 @@ def process_summary(summaryfile, **kwargs):
     37    kit
     38    variant
     """
-    logging.info("Nanoget: Staring to collect statistics from summary file.")
+    logging.info("Nanoget: Staring to collect statistics from summary file {}".format(summaryfile))
     check_existance(summaryfile)
     logging.info("Nanoget: Collecting statistics for {} sequencing".format(kwargs["readtype"]))
     if kwargs["readtype"] == "1D":
@@ -178,14 +177,15 @@ def process_summary(summaryfile, **kwargs):
             usecols=cols,
         )
     except ValueError:
-        logging.error(
-            "Nanoget: did not find expected columns in summary file:\n {}".format(', '.join(cols)))
-        sys.exit("ERROR: expected columns in summary file not found:\n {}".format(', '.join(cols)))
+        logging.error("Nanoget: did not find expected columns in summary file {}:\n {}".format(
+            summaryfile, ', '.join(cols)))
+        sys.exit("ERROR: expected columns in summary file {} not found:\n {}".format(
+            summaryfile, ', '.join(cols)))
     if kwargs["barcoded"]:
         datadf.columns = ["readIDs", "runIDs", "channelIDs", "time", "lengths", "quals", "barcode"]
     else:
         datadf.columns = ["readIDs", "runIDs", "channelIDs", "time", "lengths", "quals"]
-    logging.info("Nanoget: Finished collecting statistics from summary file.")
+    logging.info("Nanoget: Finished collecting statistics from summary file {}".format(summaryfile))
     return datadf[datadf["lengths"] != 0]
 
 
@@ -205,13 +205,13 @@ def check_bam(bam):
         samfile = pysam.AlignmentFile(bam, "rb")  # Need to reload the samfile after creating index
         logging.info("Nanoget: No index for bam file could be found, created index.")
     if not samfile.header['HD']['SO'] == 'coordinate':
-        logging.error("Nanoget: Bam file not sorted by coordinate!.")
+        logging.error("Nanoget: Bam file {} not sorted by coordinate!.".format(bam))
         sys.exit("Please use a bam file sorted by coordinate.")
-    logging.info("Nanoget: Bam file contains {} mapped and {} unmapped reads.".format(
-        samfile.mapped, samfile.unmapped))
+    logging.info("Nanoget: Bam file {} contains {} mapped and {} unmapped reads.".format(
+        bam, samfile.mapped, samfile.unmapped))
     if samfile.mapped == 0:
-        logging.error("Nanoget: Bam file does not contain aligned reads.")
-        sys.exit("FATAL: not a single read was mapped in the bam file.")
+        logging.error("Nanoget: Bam file {} does not contain aligned reads.".format(bam))
+        sys.exit("FATAL: not a single read was mapped in bam file {}".format(bam))
     return samfile
 
 
@@ -228,7 +228,7 @@ def process_bam(bam, **kwargs):
     -edit distances to the reference genome scaled by read length
     Returned in a pandas DataFrame
     """
-    logging.info("Nanoget: Starting to collect statistics from bam file.")
+    logging.info("Nanoget: Starting to collect statistics from bam file {}.".format(bam))
     samfile = check_bam(bam)
     chromosomes = samfile.references
     params = zip([bam] * len(chromosomes), chromosomes)
@@ -236,8 +236,15 @@ def process_bam(bam, **kwargs):
         datadf = pd.DataFrame(
             data=[res for sublist in executor.map(extract_from_bam, params) for res in sublist],
             columns=["quals", "aligned_quals", "lengths",
+<<<<<<< HEAD
                      "aligned_lengths", "mapQ", "percentIdentity"])
     logging.info("Nanoget: bam contains {} primary alignments.".format(datadf["lengths"].size))
+=======
+                     "aligned_lengths", "mapQ", "percentIdentity"]
+        ).dropna()
+    logging.info("Nanoget: bam {} contains {} primary alignments.".format(
+        bam, datadf["lengths"].size))
+>>>>>>> b950c7575bdde4097e5974d6da5cf923abc0e68c
     return datadf
 
 
@@ -256,8 +263,8 @@ def extract_from_bam(params):
     bam, chromosome = params
     samfile = pysam.AlignmentFile(bam, "rb")
     return [
-        (nanomath.aveQual(read.query_qualities),
-         nanomath.aveQual(read.query_alignment_qualities),
+        (nanomath.ave_qual(read.query_qualities),
+         nanomath.ave_qual(read.query_alignment_qualities),
          read.query_length,
          read.query_alignment_length,
          read.mapping_quality,
@@ -271,12 +278,16 @@ def get_pID(read):
 
     based on the NM tag if present,
     if not calculate from MD tag and CIGAR string
+
+    read.query_alignment_length can be zero in the case of ultra long reads aligned with minimap2 -L
     """
     try:
         return 100 * (1 - read.get_tag("NM") / read.query_alignment_length)
     except KeyError:
         return 100 * (1 - (parse_MD(read.get_tag("MD")) + parse_CIGAR(read.cigartuples)) /
                       read.query_alignment_length)
+    except ZeroDivisionError:
+        return None
 
 
 def parse_MD(MDlist):
@@ -320,22 +331,16 @@ def process_fastq_plain(fastq, **kwargs):
     return pd.DataFrame(
         data=[res for res in extract_from_fastq(inputfastq) if res],
         columns=["quals", "lengths"]
-    )
+    ).dropna()
 
 
 def extract_from_fastq(fq):
     """Extract metrics from a fastq file.
 
     Return average quality and read length
-
-    If read length is 0, nanomath.aveQual will throw a ZeroDivisionError
-    Skipping the read is okay then.
     """
     for rec in SeqIO.parse(fq, "fastq"):
-        try:
-            yield nanomath.aveQual(rec.letter_annotations["phred_quality"]), len(rec)
-        except ZeroDivisionError:
-            yield None
+        yield nanomath.ave_qual(rec.letter_annotations["phred_quality"]), len(rec)
 
 
 def stream_fastq_full(fastq, threads):
@@ -358,17 +363,11 @@ def extract_all_from_fastq(rec):
     """Extract metrics from a fastq file.
 
     Return identifier, read length, average quality and median quality
-
-    If length 0, nanomath.aveQual will throw a ZeroDivisionError
-    Skipping the read is okay then.
     """
-    try:
-        return (rec.id,
-                len(rec),
-                nanomath.ave_qual(rec.letter_annotations["phred_quality"]),
-                nanomath.median_qual(rec.letter_annotations["phred_quality"]))
-    except ZeroDivisionError:
-        pass
+    return (rec.id,
+            len(rec),
+            nanomath.ave_qual(rec.letter_annotations["phred_quality"]),
+            nanomath.median_qual(rec.letter_annotations["phred_quality"]))
 
 
 def info_to_dict(info):
@@ -395,21 +394,21 @@ def process_fastq_rich(fastq, **kwargs):
         try:
             read_info = info_to_dict(record.description)
             res.append(
-                (nanomath.aveQual(record.letter_annotations["phred_quality"]),
+                (nanomath.ave_qual(record.letter_annotations["phred_quality"]),
                  len(record),
                  read_info["ch"],
                  read_info["start_time"],
                  read_info["runid"]))
-        except ZeroDivisionError:  # If length 0, nanomath.aveQual will throw a ZeroDivisionError
-            pass
         except KeyError:
             logging.error("Nanoget: keyerror when processing record {}".format(record.description))
             sys.exit("Unexpected fastq identifier:\n{}\n\n \
             missing one or more of expected fields 'ch', 'start_time' or 'runid'".format(
                 record.description))
-    return pd.DataFrame(
+    df = pd.DataFrame(
         data=res,
-        columns=["quals", "lengths", "channelIDs", "timestamp", "runIDs"])
+        columns=["quals", "lengths", "channelIDs", "timestamp", "runIDs"]).dropna()
+    df["channelIDs"] = df["channelIDs"].astype("int64")
+    return df
 
 
 def readfq(fp):
