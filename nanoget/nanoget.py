@@ -236,15 +236,10 @@ def process_bam(bam, **kwargs):
         datadf = pd.DataFrame(
             data=[res for sublist in executor.map(extract_from_bam, params) for res in sublist],
             columns=["quals", "aligned_quals", "lengths",
-<<<<<<< HEAD
-                     "aligned_lengths", "mapQ", "percentIdentity"])
-    logging.info("Nanoget: bam contains {} primary alignments.".format(datadf["lengths"].size))
-=======
                      "aligned_lengths", "mapQ", "percentIdentity"]
         ).dropna()
     logging.info("Nanoget: bam {} contains {} primary alignments.".format(
         bam, datadf["lengths"].size))
->>>>>>> b950c7575bdde4097e5974d6da5cf923abc0e68c
     return datadf
 
 
