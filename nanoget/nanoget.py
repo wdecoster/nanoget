@@ -100,10 +100,6 @@ def combine_dfs(dfs, names, method):
         return pd.concat(res, ignore_index=True)
     elif method == "simple":
         return pd.concat(dfs, ignore_index=True)
-    elif method == "split_runs":
-        for df in dfs:
-            df["dataset"] = df["runIDs"]
-        return pd.concat(dfs, ignore_index=True)
 
 
 def check_existance(f):
