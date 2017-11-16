@@ -93,7 +93,7 @@ def combine_dfs(dfs, names, method):
     Combination is either done simple by just concatenating the DataFrames
     or performs tracking by adding the name of the dataset as a column."""
     if method == "track":
-        res = []
+        res = list()
         for df, identifier in zip(dfs, names):
             df["dataset"] = identifier
             res.append(df)
