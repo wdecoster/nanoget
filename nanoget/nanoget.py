@@ -207,7 +207,7 @@ def check_bam(bam, samtype="bam"):
     if not samfile.header['HD']['SO'] == 'coordinate':
         logging.error("Nanoget: Bam file {} not sorted by coordinate!.".format(bam))
         sys.exit("Please use a bam file sorted by coordinate.")
-    if samtype = "bam":
+    if samtype == "bam":
         logging.info("Nanoget: Bam file {} contains {} mapped and {} unmapped reads.".format(
             bam, samfile.mapped, samfile.unmapped))
         if samfile.mapped == 0:
