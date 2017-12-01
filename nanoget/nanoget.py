@@ -279,8 +279,11 @@ def get_pID(read):
     try:
         return 100 * (1 - read.get_tag("NM") / read.query_alignment_length)
     except KeyError:
-        return 100 * (1 - (parse_MD(read.get_tag("MD")) + parse_CIGAR(read.cigartuples)) /
-                      read.query_alignment_length)
+        try:
+            return 100 * (1 - (parse_MD(read.get_tag("MD")) + parse_CIGAR(read.cigartuples)) /
+                          read.query_alignment_length)
+        except KeyError:
+            return None
     except ZeroDivisionError:
         return None
 
