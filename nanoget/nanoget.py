@@ -244,6 +244,34 @@ def process_bam(bam, **kwargs):
     return datadf
 
 
+def process_cram(cram, **kwargs):
+    """Combines metrics from cram after extraction.
+
+    Processing function: calls pool of worker functions
+    to extract from a cram file the following metrics:
+    -lengths
+    -aligned lengths
+    -qualities
+    -aligned qualities
+    -mapping qualities
+    -edit distances to the reference genome scaled by read length
+    Returned in a pandas DataFrame
+    """
+    logging.info("Nanoget: Starting to collect statistics from cram file {}.".format(cram))
+    samfile = check_bam(cram, samtype="cram")
+    chromosomes = samfile.references
+    params = zip([cram] * len(chromosomes), chromosomes)
+    with cfutures.ProcessPoolExecutor() as executor:
+        datadf = pd.DataFrame(
+            data=[res for sublist in executor.map(extract_from_bam, params) for res in sublist],
+            columns=["quals", "aligned_quals", "lengths",
+                     "aligned_lengths", "mapQ", "percentIdentity"]
+        ).dropna()
+    logging.info("Nanoget: cram {} contains {} primary alignments.".format(
+        cram, datadf["lengths"].size))
+    return datadf
+
+
 def extract_from_bam(params):
     """Extracts metrics from bam.
 
