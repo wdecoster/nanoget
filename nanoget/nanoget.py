@@ -509,7 +509,6 @@ def process_fastq_minimal(fastq, **kwargs):
 def run_tests():
     """Test functions using testdata from the nanotest repo."""
     get_input("bam", ["nanotest/alignment.bam"])
-    get_input("cram", ["nanotest/alignment.cram"])
     get_input("summary", ["nanotest/sequencing_summary.txt"], combine="track")
     get_input("fastq_rich", ["nanotest/reads.fastq.gz"])
     get_input("fastq_minimal", ["nanotest/reads.fastq.gz"])
