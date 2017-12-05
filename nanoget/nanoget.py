@@ -59,7 +59,8 @@ def get_input(source, files, threads=4, readtype="1D",
         'bam': process_bam,
         'summary': process_summary,
         'fastq_rich': process_fastq_rich,
-        'fastq_minimal': process_fastq_minimal}
+        'fastq_minimal': process_fastq_minimal,
+        'cram': process_cram}
     filethreads = min(len(files), threads)
     threadsleft = threads - filethreads
     with cfutures.ProcessPoolExecutor(max_workers=filethreads) as executor:
@@ -189,7 +190,7 @@ def process_summary(summaryfile, **kwargs):
     return datadf[datadf["lengths"] != 0]
 
 
-def check_bam(bam):
+def check_bam(bam, samtype="bam"):
     """Check if bam file is valid.
 
     Bam file should:
@@ -207,11 +208,12 @@ def check_bam(bam):
     if not samfile.header['HD']['SO'] == 'coordinate':
         logging.error("Nanoget: Bam file {} not sorted by coordinate!.".format(bam))
         sys.exit("Please use a bam file sorted by coordinate.")
-    logging.info("Nanoget: Bam file {} contains {} mapped and {} unmapped reads.".format(
-        bam, samfile.mapped, samfile.unmapped))
-    if samfile.mapped == 0:
-        logging.error("Nanoget: Bam file {} does not contain aligned reads.".format(bam))
-        sys.exit("FATAL: not a single read was mapped in bam file {}".format(bam))
+    if samtype == "bam":
+        logging.info("Nanoget: Bam file {} contains {} mapped and {} unmapped reads.".format(
+            bam, samfile.mapped, samfile.unmapped))
+        if samfile.mapped == 0:
+            logging.error("Nanoget: Bam file {} does not contain aligned reads.".format(bam))
+            sys.exit("FATAL: not a single read was mapped in bam file {}".format(bam))
     return samfile
 
 
@@ -240,6 +242,34 @@ def process_bam(bam, **kwargs):
         ).dropna()
     logging.info("Nanoget: bam {} contains {} primary alignments.".format(
         bam, datadf["lengths"].size))
+    return datadf
+
+
+def process_cram(cram, **kwargs):
+    """Combines metrics from cram after extraction.
+
+    Processing function: calls pool of worker functions
+    to extract from a cram file the following metrics:
+    -lengths
+    -aligned lengths
+    -qualities
+    -aligned qualities
+    -mapping qualities
+    -edit distances to the reference genome scaled by read length
+    Returned in a pandas DataFrame
+    """
+    logging.info("Nanoget: Starting to collect statistics from cram file {}.".format(cram))
+    samfile = check_bam(cram, samtype="cram")
+    chromosomes = samfile.references
+    params = zip([cram] * len(chromosomes), chromosomes)
+    with cfutures.ProcessPoolExecutor() as executor:
+        datadf = pd.DataFrame(
+            data=[res for sublist in executor.map(extract_from_bam, params) for res in sublist],
+            columns=["quals", "aligned_quals", "lengths",
+                     "aligned_lengths", "mapQ", "percentIdentity"]
+        ).dropna()
+    logging.info("Nanoget: cram {} contains {} primary alignments.".format(
+        cram, datadf["lengths"].size))
     return datadf
 
 
@@ -279,8 +309,11 @@ def get_pID(read):
     try:
         return 100 * (1 - read.get_tag("NM") / read.query_alignment_length)
     except KeyError:
-        return 100 * (1 - (parse_MD(read.get_tag("MD")) + parse_CIGAR(read.cigartuples)) /
-                      read.query_alignment_length)
+        try:
+            return 100 * (1 - (parse_MD(read.get_tag("MD")) + parse_CIGAR(read.cigartuples)) /
+                          read.query_alignment_length)
+        except KeyError:
+            return None
     except ZeroDivisionError:
         return None
 
