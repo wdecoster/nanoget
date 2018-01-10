@@ -239,7 +239,7 @@ def process_bam(bam, **kwargs):
             data=[res for sublist in executor.map(extract_from_bam, params) for res in sublist],
             columns=["quals", "aligned_quals", "lengths",
                      "aligned_lengths", "mapQ", "percentIdentity"]
-        ).dropna()
+        ).dropna(axis='columns', how='all').dropna(axis='index', how='any')
     logging.info("Nanoget: bam {} contains {} primary alignments.".format(
         bam, datadf["lengths"].size))
     return datadf
@@ -267,7 +267,7 @@ def process_cram(cram, **kwargs):
             data=[res for sublist in executor.map(extract_from_bam, params) for res in sublist],
             columns=["quals", "aligned_quals", "lengths",
                      "aligned_lengths", "mapQ", "percentIdentity"]
-        ).dropna()
+        ).dropna(axis='columns', how='all').dropna(axis='index', how='any')
     logging.info("Nanoget: cram {} contains {} primary alignments.".format(
         cram, datadf["lengths"].size))
     return datadf
