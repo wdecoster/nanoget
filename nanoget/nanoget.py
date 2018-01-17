@@ -237,9 +237,10 @@ def process_bam(bam, **kwargs):
     with cfutures.ProcessPoolExecutor() as executor:
         datadf = pd.DataFrame(
             data=[res for sublist in executor.map(extract_from_bam, params) for res in sublist],
-            columns=["quals", "aligned_quals", "lengths",
-                     "aligned_lengths", "mapQ", "percentIdentity"]
-        ).dropna(axis='columns', how='all').dropna(axis='index', how='any')
+            columns=["readIDs", "quals", "aligned_quals", "lengths",
+                     "aligned_lengths", "mapQ", "percentIdentity"]) \
+            .dropna(axis='columns', how='all') \
+            .dropna(axis='index', how='any')
     logging.info("Nanoget: bam {} contains {} primary alignments.".format(
         bam, datadf["lengths"].size))
     return datadf
@@ -265,9 +266,10 @@ def process_cram(cram, **kwargs):
     with cfutures.ProcessPoolExecutor() as executor:
         datadf = pd.DataFrame(
             data=[res for sublist in executor.map(extract_from_bam, params) for res in sublist],
-            columns=["quals", "aligned_quals", "lengths",
-                     "aligned_lengths", "mapQ", "percentIdentity"]
-        ).dropna(axis='columns', how='all').dropna(axis='index', how='any')
+            columns=["readIDs", "quals", "aligned_quals", "lengths",
+                     "aligned_lengths", "mapQ", "percentIdentity"]) \
+            .dropna(axis='columns', how='all') \
+            .dropna(axis='index', how='any')
     logging.info("Nanoget: cram {} contains {} primary alignments.".format(
         cram, datadf["lengths"].size))
     return datadf
@@ -288,7 +290,8 @@ def extract_from_bam(params):
     bam, chromosome = params
     samfile = pysam.AlignmentFile(bam, "rb")
     return [
-        (nanomath.ave_qual(read.query_qualities),
+        (read.query_name,
+         nanomath.ave_qual(read.query_qualities),
          nanomath.ave_qual(read.query_alignment_qualities),
          read.query_length,
          read.query_alignment_length,
