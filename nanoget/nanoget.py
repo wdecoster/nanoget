@@ -56,6 +56,7 @@ def get_input(source, files, threads=4, readtype="1D",
     """
     proc_functions = {
         'fastq': process_fastq_plain,
+        'fasta': process_fasta,
         'bam': process_bam,
         'summary': process_summary,
         'fastq_rich': process_fastq_rich,
@@ -331,7 +332,7 @@ def parse_CIGAR(cigartuples):
     return sum([item[1] for item in cigartuples if item[0] == 1])
 
 
-def handle_compressed_fastq(inputfq):
+def handle_compressed_input(inputfq, file_type="fastq"):
     """Return handles from compressed files according to extension.
 
     Check for which fastq input is presented and open a handle accordingly
@@ -341,24 +342,34 @@ def handle_compressed_fastq(inputfq):
     check_existance(inputfq)
     if inputfq.endswith('.gz'):
         import gzip
-        logging.info("Nanoget: Decompressing gzipped fastq {}".format(inputfq))
+        logging.info("Nanoget: Decompressing gzipped {} {}".format(file_type, inputfq))
         return gzip.open(inputfq, 'rt')
     elif inputfq.endswith('.bz2'):
         import bz2
-        logging.info("Nanoget: Decompressing bz2 compressed fastq {}".format(inputfq))
+        logging.info("Nanoget: Decompressing bz2 compressed {} {}".format(file_type, inputfq))
         return bz2.BZ2File(inputfq, 'rt')
-    elif inputfq.endswith(('.fastq', '.fq', '.bgz')):
+    elif inputfq.endswith(('.fastq', '.fq', '.bgz', 'fasta', '.fa', '.fas')):
         return open(inputfq, 'r')
     else:
         logging.error("INPUT ERROR: Unrecognized file extension {}".format(inputfq))
         sys.exit('INPUT ERROR:\nUnrecognized file extension in {}\n'
-                 'Supported are .gz, .bz2, .bgz, .fastq and .fq'.format(inputfq))
+                 'Supported are gz, bz2, bgz, fastq, fq, fasta, fa and fas'.format(inputfq))
+
+
+def process_fasta(fasta, **kwargs):
+    """Combine metrics extracted from a fasta file."""
+    logging.info("Nanoget: Starting to collect statistics from a fasta file.")
+    inputfasta = handle_compressed_input(fasta)
+    return pd.DataFrame(
+        data=[len(rec) for rec in inputfasta],
+        columns=["lengths"]
+    ).dropna()
 
 
 def process_fastq_plain(fastq, **kwargs):
     """Combine metrics extracted from a fastq file."""
     logging.info("Nanoget: Starting to collect statistics from plain fastq file.")
-    inputfastq = handle_compressed_fastq(fastq)
+    inputfastq = handle_compressed_input(fastq)
     return pd.DataFrame(
         data=[res for res in extract_from_fastq(inputfastq) if res],
         columns=["quals", "lengths"]
@@ -383,7 +394,7 @@ def stream_fastq_full(fastq, threads):
     -read_lenght
     """
     logging.info("Nanoget: Starting to collect full metrics from plain fastq file.")
-    inputfastq = handle_compressed_fastq(fastq)
+    inputfastq = handle_compressed_input(fastq)
     with cfutures.ProcessPoolExecutor(max_workers=threads) as executor:
         for results in executor.map(extract_all_from_fastq, SeqIO.parse(inputfastq, "fastq")):
             yield results
@@ -419,7 +430,7 @@ def process_fastq_rich(fastq, **kwargs):
     -> datetime.datetime(2016, 7, 15, 14, 23, 22, tzinfo=tzutc())
     """
     logging.info("Nanoget: Starting to collect statistics from rich fastq file.")
-    inputfastq = handle_compressed_fastq(fastq)
+    inputfastq = handle_compressed_input(fastq)
     res = []
     for record in SeqIO.parse(inputfastq, "fastq"):
         try:
@@ -497,7 +508,7 @@ def fq_minimal(fq):
 
 def process_fastq_minimal(fastq, **kwargs):
     """Swiftly extract minimal features (length and timestamp) from a rich fastq file"""
-    infastq = handle_compressed_fastq(fastq)
+    infastq = handle_compressed_input(fastq)
     try:
         df = pd.DataFrame(
             data=[rec for rec in fq_minimal(infastq) if rec],
@@ -516,6 +527,7 @@ def run_tests():
     get_input("fastq_rich", ["nanotest/reads.fastq.gz"])
     get_input("fastq_minimal", ["nanotest/reads.fastq.gz"])
     get_input("fastq", ["nanotest/reads.fastq.gz"])
+    get_input("fasta", ["nanotest/reads.fa.gz"])
 
 
 # To ensure backwards compatilibity, for a while, keeping exposed function names duplicated:
