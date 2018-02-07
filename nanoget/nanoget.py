@@ -359,7 +359,7 @@ def handle_compressed_input(inputfq, file_type="fastq"):
 def process_fasta(fasta, **kwargs):
     """Combine metrics extracted from a fasta file."""
     logging.info("Nanoget: Starting to collect statistics from a fasta file.")
-    inputfasta = handle_compressed_input(fasta)
+    inputfasta = handle_compressed_input(fasta, file_type="fasta")
     return pd.DataFrame(
         data=[len(rec) for rec in inputfasta],
         columns=["lengths"]
