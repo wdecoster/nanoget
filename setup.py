@@ -32,5 +32,9 @@ setup(
     keywords='nanopore sequencing plotting quality control',
     python_requires='>=3',
     packages=find_packages() + ['scripts'],
-    install_requires=['pandas', 'numpy', 'biopython', 'pysam>0.10.0.0', 'nanomath'],
+    install_requires=['pandas>=0.22.0',
+                      'numpy',
+                      'biopython',
+                      'pysam>0.10.0.0',
+                      'nanomath'],
     package_dir={'nanoget': 'nanoget'})
