@@ -125,7 +125,7 @@ def calculate_start_time(df):
                 df.loc[df["dataset"] == dset, "time_arr"] - time_zero
     else:
         df["start_time"] = df["time_arr"] - df["time_arr"].min()
-    return df.drop(["timestamp", "time_arr"], axis=1)
+    return df.drop(["time", "timestamp", "time_arr"], axis=1, errors="ignore")
 
 
 def check_existance(f):
