@@ -554,12 +554,5 @@ def run_tests():
     get_input("fasta", ["nanotest/reads.fa.gz"])
 
 
-# To ensure backwards compatilibity, for a while, keeping exposed function names duplicated:
-processSummary = process_summary
-processBam = process_bam
-processFastqPlain = process_fastq_plain
-processFastq_rich = process_fastq_rich
-
-
 if __name__ == '__main__':
     run_tests()
