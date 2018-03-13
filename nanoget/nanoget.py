@@ -155,7 +155,7 @@ def process_summary(summaryfile, **kwargs):
      8  template_start
      9  num_events_template
     10  template_duration
-    11  num_called_templatexticks
+    11  num_called_template
     12  sequence_length_template
     13  mean_qscore_template
     14  strand_score_template
