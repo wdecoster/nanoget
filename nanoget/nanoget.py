@@ -385,7 +385,7 @@ def process_fasta(fasta, **kwargs):
     logging.info("Nanoget: Starting to collect statistics from a fasta file.")
     inputfasta = handle_compressed_input(fasta, file_type="fasta")
     return pd.DataFrame(
-        data=[len(rec) for rec in inputfasta],
+        data=[len(rec) for rec in SeqIO.parse(inputfasta, "fasta")],
         columns=["lengths"]
     ).dropna()
 
