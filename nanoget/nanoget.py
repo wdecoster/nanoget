@@ -213,7 +213,7 @@ def process_summary(summaryfile, **kwargs):
     else:
         datadf.columns = ["readIDs", "runIDs", "channelIDs", "time", "duration", "lengths", "quals"]
     logging.info("Nanoget: Finished collecting statistics from summary file {}".format(summaryfile))
-    return reduce_memory_usage(datadf[datadf["lengths"] != 0])
+    return reduce_memory_usage(datadf.loc[datadf["lengths"] != 0].copy())
 
 
 def reduce_memory_usage(df):
@@ -222,12 +222,15 @@ def reduce_memory_usage(df):
     - convert runIDs to categorical
     - downcast ints and floats
     """
+    usage_pre = df.memory_usage(deep=True).sum()
     if "runIDs" in df:
-        df["runIDs"] = df["runIDs"].astype("category")
+        df.loc[:, "runIDs"] = df.loc[:, "runIDs"].astype("category")
     df_int = df.select_dtypes(include=['int'])
     df_float = df.select_dtypes(include=['float'])
-    df[df_int.columns] = df_int.apply(pd.to_numeric, downcast='unsigned')
-    df[df_float.columns] = df_float.apply(pd.to_numeric, downcast='float')
+    df.loc[:, df_int.columns] = df_int.apply(pd.to_numeric, downcast='unsigned')
+    df.loc[:, df_float.columns] = df_float.apply(pd.to_numeric, downcast='float')
+    usage_post = df.memory_usage(deep=True).sum()
+    logging.info("Reduced DataFrame memory usage from {}b to {}b".format(usage_pre, usage_post))
     return df
 
 
