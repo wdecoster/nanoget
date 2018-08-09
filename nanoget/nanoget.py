@@ -230,7 +230,8 @@ def reduce_memory_usage(df):
     df.loc[:, df_int.columns] = df_int.apply(pd.to_numeric, downcast='unsigned')
     df.loc[:, df_float.columns] = df_float.apply(pd.to_numeric, downcast='float')
     usage_post = df.memory_usage(deep=True).sum()
-    logging.info("Reduced DataFrame memory usage from {}b to {}b".format(usage_pre, usage_post))
+    logging.info("Reduced DataFrame memory usage from {}Mb to {}Mb".format(
+        usage_pre / 1024**2, usage_post / 1024**2))
     if usage_post > 4e9:
         logging.info("DataFrame of features is too big, dropping read identifiers.")
         return df.drop(["readIDs"], axis=1, errors="ignore")
