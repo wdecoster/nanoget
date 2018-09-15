@@ -74,6 +74,8 @@ def get_input(source, files, threads=4, readtype="1D",
             dfs=[out for out in executor.map(extration_function, files)],
             names=names or files,
             method=combine)
+    if pd.isna(datadf["readIDs"]).any():  # If any readIDs were dropped before combining df
+        datadf.drop("readIDs", inplace=True)
     datadf = calculate_start_time(datadf)
     logging.info("Nanoget: Gathered all metrics of {} reads".format(len(datadf)))
     if len(datadf) == 0:
