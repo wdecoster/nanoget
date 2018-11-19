@@ -74,6 +74,8 @@ def get_input(source, files, threads=4, readtype="1D",
             dfs=[out for out in executor.map(extration_function, files)],
             names=names or files,
             method=combine)
+    if "readIDs" in datadf and pd.isna(datadf["readIDs"]).any():
+        datadf.drop("readIDs", inplace=True)
     datadf = calculate_start_time(datadf)
     logging.info("Nanoget: Gathered all metrics of {} reads".format(len(datadf)))
     if len(datadf) == 0:
@@ -188,10 +190,10 @@ def process_summary(summaryfile, **kwargs):
         summaryfile, kwargs["readtype"]))
     check_existance(summaryfile)
     if kwargs["readtype"] == "1D":
-        cols = ["read_id", "run_id", "channel", "start_time",
+        cols = ["read_id", "run_id", "channel", "start_time", "duration",
                 "sequence_length_template", "mean_qscore_template"]
     elif kwargs["readtype"] in ["2D", "1D2"]:
-        cols = ["read_id", "run_id", "channel", "start_time",
+        cols = ["read_id", "run_id", "channel", "start_time", "duration",
                 "sequence_length_2d", "mean_qscore_2d"]
     if kwargs["barcoded"]:
         cols.append("barcode_arrangement")
@@ -208,11 +210,35 @@ def process_summary(summaryfile, **kwargs):
         sys.exit("ERROR: expected columns in summary file {} not found:\n {}".format(
             summaryfile, ', '.join(cols)))
     if kwargs["barcoded"]:
-        datadf.columns = ["readIDs", "runIDs", "channelIDs", "time", "lengths", "quals", "barcode"]
+        datadf.columns = ["readIDs", "runIDs", "channelIDs", "time", "duration",
+                          "lengths", "quals", "barcode"]
     else:
-        datadf.columns = ["readIDs", "runIDs", "channelIDs", "time", "lengths", "quals"]
+        datadf.columns = ["readIDs", "runIDs", "channelIDs", "time", "duration", "lengths", "quals"]
     logging.info("Nanoget: Finished collecting statistics from summary file {}".format(summaryfile))
-    return datadf[datadf["lengths"] != 0]
+    return reduce_memory_usage(datadf.loc[datadf["lengths"] != 0].copy())
+
+
+def reduce_memory_usage(df):
+    """reduce memory usage of the dataframe
+
+    - convert runIDs to categorical
+    - downcast ints and floats
+    """
+    usage_pre = df.memory_usage(deep=True).sum()
+    if "runIDs" in df:
+        df.loc[:, "runIDs"] = df.loc[:, "runIDs"].astype("category")
+    df_int = df.select_dtypes(include=['int'])
+    df_float = df.select_dtypes(include=['float'])
+    df.loc[:, df_int.columns] = df_int.apply(pd.to_numeric, downcast='unsigned')
+    df.loc[:, df_float.columns] = df_float.apply(pd.to_numeric, downcast='float')
+    usage_post = df.memory_usage(deep=True).sum()
+    logging.info("Reduced DataFrame memory usage from {}Mb to {}Mb".format(
+        usage_pre / 1024**2, usage_post / 1024**2))
+    if usage_post > 4e9 and "readIDs" in df:
+        logging.info("DataFrame of features is too big, dropping read identifiers.")
+        return df.drop(["readIDs"], axis=1, errors="ignore")
+    else:
+        return df
 
 
 def check_bam(bam, samtype="bam"):
@@ -268,7 +294,7 @@ def process_bam(bam, **kwargs):
             .dropna(axis='index', how='any')
     logging.info("Nanoget: bam {} contains {} primary alignments.".format(
         bam, datadf["lengths"].size))
-    return datadf
+    return reduce_memory_usage(datadf)
 
 
 def process_cram(cram, **kwargs):
@@ -297,7 +323,7 @@ def process_cram(cram, **kwargs):
             .dropna(axis='index', how='any')
     logging.info("Nanoget: cram {} contains {} primary alignments.".format(
         cram, datadf["lengths"].size))
-    return datadf
+    return reduce_memory_usage(datadf)
 
 
 def extract_from_bam(params):
@@ -384,20 +410,20 @@ def process_fasta(fasta, **kwargs):
     """Combine metrics extracted from a fasta file."""
     logging.info("Nanoget: Starting to collect statistics from a fasta file.")
     inputfasta = handle_compressed_input(fasta, file_type="fasta")
-    return pd.DataFrame(
-        data=[len(rec) for rec in inputfasta],
+    return reduce_memory_usage(pd.DataFrame(
+        data=[len(rec) for rec in SeqIO.parse(inputfasta, "fasta")],
         columns=["lengths"]
-    ).dropna()
+    ).dropna())
 
 
 def process_fastq_plain(fastq, **kwargs):
     """Combine metrics extracted from a fastq file."""
     logging.info("Nanoget: Starting to collect statistics from plain fastq file.")
     inputfastq = handle_compressed_input(fastq)
-    return pd.DataFrame(
+    return reduce_memory_usage(pd.DataFrame(
         data=[res for res in extract_from_fastq(inputfastq) if res],
         columns=["quals", "lengths"]
-    ).dropna()
+    ).dropna())
 
 
 def extract_from_fastq(fq):
@@ -474,7 +500,7 @@ def process_fastq_rich(fastq, **kwargs):
         data=res,
         columns=["quals", "lengths", "channelIDs", "timestamp", "runIDs"]).dropna()
     df["channelIDs"] = df["channelIDs"].astype("int64")
-    return df
+    return reduce_memory_usage(df)
 
 
 def readfq(fp):
@@ -541,7 +567,7 @@ def process_fastq_minimal(fastq, **kwargs):
     except IndexError:
         logging.error("Fatal: Incorrect file structure for fastq_minimal")
         sys.exit("Error: file does not match expected structure for fastq_minimal")
-    return df
+    return reduce_memory_usage(df)
 
 
 def run_tests():
