@@ -75,7 +75,7 @@ def get_input(source, files, threads=4, readtype="1D",
             names=names or files,
             method=combine)
     if "readIDs" in datadf and pd.isna(datadf["readIDs"]).any():
-        datadf.drop("readIDs", inplace=True)
+        datadf.drop("readIDs", axis='columns', inplace=True)
     datadf = calculate_start_time(datadf)
     logging.info("Nanoget: Gathered all metrics of {} reads".format(len(datadf)))
     if len(datadf) == 0:
