@@ -397,7 +397,7 @@ def handle_compressed_input(inputfq, file_type="fastq"):
     elif inputfq.endswith('.bz2'):
         import bz2
         logging.info("Nanoget: Decompressing bz2 compressed {} {}".format(file_type, inputfq))
-        return bz2.BZ2File(inputfq, 'rt')
+        return bz2.open(inputfq, 'rt')
     elif inputfq.endswith(('.fastq', '.fq', '.bgz', 'fasta', '.fa', '.fas')):
         return open(inputfq, 'r')
     else:
