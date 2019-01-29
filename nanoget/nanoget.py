@@ -390,7 +390,7 @@ def handle_compressed_input(inputfq, file_type="fastq"):
     Relies on file extensions to recognize compression
     """
     check_existance(inputfq)
-    if inputfq.endswith('.gz'):
+    if inputfq.endswith(('.gz', 'bgz')):
         import gzip
         logging.info("Nanoget: Decompressing gzipped {} {}".format(file_type, inputfq))
         return gzip.open(inputfq, 'rt')
@@ -398,7 +398,7 @@ def handle_compressed_input(inputfq, file_type="fastq"):
         import bz2
         logging.info("Nanoget: Decompressing bz2 compressed {} {}".format(file_type, inputfq))
         return bz2.open(inputfq, 'rt')
-    elif inputfq.endswith(('.fastq', '.fq', '.bgz', 'fasta', '.fa', '.fas')):
+    elif inputfq.endswith(('.fastq', '.fq', 'fasta', '.fa', '.fas')):
         return open(inputfq, 'r')
     else:
         logging.error("INPUT ERROR: Unrecognized file extension {}".format(inputfq))
