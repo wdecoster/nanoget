@@ -63,6 +63,7 @@ def get_input(source, files, threads=4, readtype="1D",
         'fastq_rich': process_fastq_rich,
         'fastq_minimal': process_fastq_minimal,
         'cram': process_cram}
+        'ubam': ex.process_ubam, }
     filethreads = min(len(files), threads)
     threadsleft = threads - filethreads
     with cfutures.ProcessPoolExecutor(max_workers=filethreads) as executor:
