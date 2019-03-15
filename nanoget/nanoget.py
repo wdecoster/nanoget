@@ -125,17 +125,3 @@ def calculate_start_time(df):
     else:
         df["start_time"] = df["time_arr"] - df["time_arr"].min()
     return df.drop(["time", "timestamp", "time_arr"], axis=1, errors="ignore")
-
-
-def run_tests():
-    """Test functions using testdata from the nanotest repo."""
-    get_input("bam", ["nanotest/alignment.bam"])
-    get_input("summary", ["nanotest/sequencing_summary.txt"], combine="track")
-    get_input("fastq_rich", ["nanotest/reads.fastq.gz"])
-    get_input("fastq_minimal", ["nanotest/reads.fastq.gz"])
-    get_input("fastq", ["nanotest/reads.fastq.gz"])
-    get_input("fasta", ["nanotest/reads.fa.gz"])
-
-
-if __name__ == '__main__':
-    run_tests()

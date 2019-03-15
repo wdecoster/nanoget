@@ -1,2 +1,3 @@
 include scripts/test.sh
+include scripts/test.py
 include README.md
