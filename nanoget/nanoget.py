@@ -63,12 +63,12 @@ def get_input(source, files, threads=4, readtype="1D",
     filethreads = min(len(files), threads)
     threadsleft = threads - filethreads
     with cfutures.ProcessPoolExecutor(max_workers=filethreads) as executor:
-        extration_function = partial(proc_functions[source],
-                                     threads=threadsleft,
-                                     readtype=readtype,
-                                     barcoded=barcoded)
+        extraction_function = partial(proc_functions[source],
+                                      threads=threadsleft,
+                                      readtype=readtype,
+                                      barcoded=barcoded)
         datadf = combine_dfs(
-            dfs=[out for out in executor.map(extration_function, files)],
+            dfs=[out for out in executor.map(extraction_function, files)],
             names=names or files,
             method=combine)
     if "readIDs" in datadf and pd.isna(datadf["readIDs"]).any():
