@@ -60,6 +60,10 @@ def get_input(source, files, threads=4, readtype="1D",
         'fastq_minimal': ex.process_fastq_minimal,
         'cram': ex.process_cram,
         'ubam': ex.process_ubam, }
+
+    if source not in proc_functions.keys():
+        logging.error("nanoget: Unsupported data source: {}".format(source))
+        sys.exit("Unsupported data source: {}".format(source))
     filethreads = min(len(files), threads)
     threadsleft = threads - filethreads
     with cfutures.ProcessPoolExecutor(max_workers=filethreads) as executor:
