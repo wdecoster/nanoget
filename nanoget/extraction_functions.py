@@ -62,11 +62,10 @@ def process_summary(summaryfile, **kwargs):
         summaryfile, kwargs["readtype"]))
     ut.check_existance(summaryfile)
     if kwargs["readtype"] == "1D":
-        cols = ["read_id", "run_id", "channel", "start_time", "duration",
+        cols = ["channel", "start_time", "duration",
                 "sequence_length_template", "mean_qscore_template"]
     elif kwargs["readtype"] in ["2D", "1D2"]:
-        cols = ["read_id", "run_id", "channel", "start_time", "duration",
-                "sequence_length_2d", "mean_qscore_2d"]
+        cols = ["channel", "start_time", "duration", "sequence_length_2d", "mean_qscore_2d"]
     if kwargs["barcoded"]:
         cols.append("barcode_arrangement")
         logging.info("Nanoget: Extracting metrics per barcode.")
@@ -82,10 +81,9 @@ def process_summary(summaryfile, **kwargs):
         sys.exit("ERROR: expected columns in summary file {} not found:\n {}".format(
             summaryfile, ', '.join(cols)))
     if kwargs["barcoded"]:
-        datadf.columns = ["readIDs", "runIDs", "channelIDs", "time", "duration",
-                          "lengths", "quals", "barcode"]
+        datadf.columns = ["channelIDs", "time", "duration", "lengths", "quals", "barcode"]
     else:
-        datadf.columns = ["readIDs", "runIDs", "channelIDs", "time", "duration", "lengths", "quals"]
+        datadf.columns = ["channelIDs", "time", "duration", "lengths", "quals"]
     logging.info("Nanoget: Finished collecting statistics from summary file {}".format(summaryfile))
     return ut.reduce_memory_usage(datadf.loc[datadf["lengths"] != 0].copy())
 
