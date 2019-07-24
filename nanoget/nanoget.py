@@ -98,7 +98,7 @@ def combine_dfs(dfs, names, method):
 
 
 def calculate_start_time(df):
-    """Calculate the star_time per read.
+    """Calculate the start_time per read.
 
     Time data is either
     a "time" (in seconds, derived from summary files) or
