@@ -111,13 +111,13 @@ def calculate_start_time(df):
     In the case of method=track (and dataset is a column in the df) then this
     subtraction is done per dataset
     """
-    if "time" in df:
+    if "time" in df.columns:
         df["time_arr"] = pd.Series(df["time"], dtype='datetime64[s]')
-    elif "timestamp" in df:
+    elif "timestamp" in df.columns:
         df["time_arr"] = pd.Series(df["timestamp"], dtype="datetime64[ns]")
     else:
         return df
-    if "dataset" in df:
+    if "dataset" in df.columns:
         for dset in df["dataset"].unique():
             time_zero = df.loc[df["dataset"] == dset, "time_arr"].min()
             df.loc[df["dataset"] == dset, "start_time"] = \
