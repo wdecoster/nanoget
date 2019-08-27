@@ -15,7 +15,7 @@ def reduce_memory_usage(df):
         df.loc[:, "runIDs"] = df.loc[:, "runIDs"].astype("category")
     df_int = df.select_dtypes(include=['int'])
     df_float = df.select_dtypes(include=['float'])
-    df.loc[:, df_int.columns] = df_int.apply(pd.to_numeric, downcast='unsigned')
+    df.loc[:, df_int.columns] = df_int.apply(pd.to_numeric, downcast='integer')
     df.loc[:, df_float.columns] = df_float.apply(pd.to_numeric, downcast='float')
     usage_post = df.memory_usage(deep=True).sum()
     logging.info("Reduced DataFrame memory usage from {}Mb to {}Mb".format(

@@ -1,4 +1,5 @@
 import logging
+from functools import reduce
 import nanoget.utils as ut
 import pandas as pd
 import sys
@@ -229,12 +230,16 @@ def get_pID(read):
 
     read.query_alignment_length can be zero in the case of ultra long reads aligned with minimap2 -L
     """
+    match = reduce(lambda x, y: x + y[1] if y[0] in (0, 7, 8) else x, read.cigartuples, 0)
+    ins = reduce(lambda x, y: x + y[1] if y[0] == 1 else x, read.cigartuples, 0)
+    delt = reduce(lambda x, y: x + y[1] if y[0] == 2 else x, read.cigartuples, 0)
+    alignment_length = match + ins + delt
     try:
-        return 100 * (1 - read.get_tag("NM") / read.query_alignment_length)
+        return (1 - read.get_tag("NM") / alignment_length) * 100
     except KeyError:
         try:
             return 100 * (1 - (parse_MD(read.get_tag("MD")) + parse_CIGAR(read.cigartuples)) /
-                          read.query_alignment_length)
+                          alignment_length)
         except KeyError:
             return None
     except ZeroDivisionError:
