@@ -125,7 +125,7 @@ def process_ubam(bam, **kwargs):
     if not samfile.has_index():
         pysam.index(bam)
         # Need to reload the samfile after creating index
-        samfile = pysam.AlignmentFile(bam, "rb")
+        samfile = pysam.AlignmentFile(bam, "rb", check_sq=False)
         logging.info("Nanoget: No index for bam file could be found, created index.")
     datadf = pd.DataFrame(
         data=[(read.query_name, nanomath.ave_qual(read.query_qualities), read.query_length)
