@@ -107,7 +107,7 @@ def combine_dfs(dfs, names, method):
     Combination is either done simple by just concatenating the DataFrames
     or performs tracking by adding the name of the dataset as a column."""
     if method == "track":
-        return pd.concat([df.assign(dataset=identifier) for df, identifier in zip(dfs, names)],
+        return pd.concat([df.assign(dataset=n) for df, n in zip(dfs, names)],
                          ignore_index=True)
     elif method == "simple":
         return pd.concat(dfs, ignore_index=True)
