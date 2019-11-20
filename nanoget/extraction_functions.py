@@ -155,7 +155,7 @@ def process_bam(bam, **kwargs):
     samfile = check_bam(bam)
     chromosomes = samfile.references
     params = zip([bam] * len(chromosomes), chromosomes)
-    with cfutures.ProcessPoolExecutor() as executor:
+    with cfutures.ProcessPoolExecutor(max_workers=kwargs["threads"]) as executor:
         datadf = pd.DataFrame(
             data=[res for sublist in executor.map(extract_from_bam, params) for res in sublist],
             columns=["readIDs", "quals", "aligned_quals", "lengths",
@@ -184,7 +184,7 @@ def process_cram(cram, **kwargs):
     samfile = check_bam(cram, samtype="cram")
     chromosomes = samfile.references
     params = zip([cram] * len(chromosomes), chromosomes)
-    with cfutures.ProcessPoolExecutor() as executor:
+    with cfutures.ProcessPoolExecutor(max_workers=kwargs["threads"]) as executor:
         datadf = pd.DataFrame(
             data=[res for sublist in executor.map(extract_from_bam, params) for res in sublist],
             columns=["readIDs", "quals", "aligned_quals", "lengths",
