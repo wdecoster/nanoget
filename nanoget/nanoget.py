@@ -68,7 +68,7 @@ def get_input(source, files, threads=4, readtype="1D",
         logging.error("nanoget: Unsupported data source: {}".format(source))
         sys.exit("Unsupported data source: {}".format(source))
     filethreads = min(len(files), threads)
-    threadsleft = threads - filethreads
+    threadsleft = threads - filethreads or 1
     if huge:
         logging.info("nanoget: Running with a single huge input file.")
         if not len(files) == 1:
