@@ -223,7 +223,7 @@ def extract_from_bam(params):
          read.mapping_quality,
          get_pID(read))
         for read in samfile.fetch(reference=chromosome, multiple_iterators=True)
-        if not read.is_secondary]
+        if not read.is_secondary and not read.is_unmapped]
 
 
 def get_pID(read):
