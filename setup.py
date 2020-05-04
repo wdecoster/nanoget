@@ -38,4 +38,5 @@ setup(
                       'biopython',
                       'pysam>0.10.0.0',
                       'nanomath'],
-    package_dir={'nanoget': 'nanoget'})
+    package_dir={'nanoget': 'nanoget'},
+    data_files=[("", ["LICENSE"])])

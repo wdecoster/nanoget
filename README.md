@@ -25,3 +25,5 @@ or
 ```
 conda install -c bioconda nanoget
 ```
+
+Copyright: 2016-2020 Wouter De Coster <decosterwouter@gmail.com>
