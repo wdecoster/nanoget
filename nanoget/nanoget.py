@@ -27,7 +27,7 @@ import nanoget.extraction_functions as ex
 
 
 def get_input(source, files, threads=4, readtype="1D",
-              combine="simple", names=None, barcoded=False, huge=False):
+              combine="simple", names=None, barcoded=False, huge=False, keep_supp=True):
     """Get input and process accordingly.
 
     Data can be:
@@ -79,13 +79,15 @@ def get_input(source, files, threads=4, readtype="1D",
         datadf = proc_functions[source](files[0],
                                         threads=threadsleft,
                                         readtype=readtype,
-                                        barcoded=barcoded)
+                                        barcoded=barcoded,
+                                        keep_supp=keep_supp)
     else:
         with cfutures.ProcessPoolExecutor(max_workers=filethreads) as executor:
             extraction_function = partial(proc_functions[source],
                                           threads=threadsleft,
                                           readtype=readtype,
-                                          barcoded=barcoded)
+                                          barcoded=barcoded,
+                                          keep_supp=keep_supp)
             datadf = combine_dfs(
                 dfs=[out for out in executor.map(extraction_function, files)],
                 names=names or files,

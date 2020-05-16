@@ -8,6 +8,7 @@ import nanomath
 import re
 from Bio import SeqIO
 import concurrent.futures as cfutures
+from itertools import repeat
 
 
 def process_summary(summaryfile, **kwargs):
@@ -155,13 +156,15 @@ def process_bam(bam, **kwargs):
     samfile = check_bam(bam)
     chromosomes = samfile.references
     if len(chromosomes) > 100:
-        params = [(bam, None)]
+        unit = None
         logging.info("Nanoget: lots of contigs (>100), not running in separate processes")
     else:
-        params = zip([bam] * len(chromosomes), chromosomes)
+        unit = chromosomes
     with cfutures.ProcessPoolExecutor(max_workers=kwargs["threads"]) as executor:
         datadf = pd.DataFrame(
-            data=[res for sublist in executor.map(extract_from_bam, params) for res in sublist],
+            data=[res for sublist in executor.map(extract_from_bam,
+                                                  repeat(bam), unit, repeat(kwargs["keep_supp"]))
+                  for res in sublist],
             columns=["readIDs", "quals", "aligned_quals", "lengths",
                      "aligned_lengths", "mapQ", "percentIdentity"]) \
             .dropna(axis='columns', how='all') \
@@ -187,10 +190,16 @@ def process_cram(cram, **kwargs):
     logging.info("Nanoget: Starting to collect statistics from cram file {}.".format(cram))
     samfile = check_bam(cram, samtype="cram")
     chromosomes = samfile.references
-    params = zip([cram] * len(chromosomes), chromosomes)
+    if len(chromosomes) > 100:
+        unit = None
+        logging.info("Nanoget: lots of contigs (>100), not running in separate processes")
+    else:
+        unit = chromosomes
     with cfutures.ProcessPoolExecutor(max_workers=kwargs["threads"]) as executor:
         datadf = pd.DataFrame(
-            data=[res for sublist in executor.map(extract_from_bam, params) for res in sublist],
+            data=[res for sublist in executor.map(extract_from_bam,
+                                                  repeat(cram), unit, repeat(kwargs["keep_supp"]))
+                  for res in sublist],
             columns=["readIDs", "quals", "aligned_quals", "lengths",
                      "aligned_lengths", "mapQ", "percentIdentity"]) \
             .dropna(axis='columns', how='all') \
@@ -200,7 +209,7 @@ def process_cram(cram, **kwargs):
     return ut.reduce_memory_usage(datadf)
 
 
-def extract_from_bam(params):
+def extract_from_bam(bam, chromosome, keep_supplementary=True):
     """Extracts metrics from bam.
 
     Worker function per chromosome
@@ -212,18 +221,29 @@ def extract_from_bam(params):
     -mapping qualities
     -edit distances to the reference genome scaled by read length
     """
-    bam, chromosome = params
     samfile = pysam.AlignmentFile(bam, "rb")
-    return [
-        (read.query_name,
-         nanomath.ave_qual(read.query_qualities),
-         nanomath.ave_qual(read.query_alignment_qualities),
-         read.query_length,
-         read.query_alignment_length,
-         read.mapping_quality,
-         get_pID(read))
-        for read in samfile.fetch(reference=chromosome, multiple_iterators=True)
-        if not read.is_secondary and not read.is_unmapped]
+    if keep_supplementary:
+        return [
+            (read.query_name,
+             nanomath.ave_qual(read.query_qualities),
+             nanomath.ave_qual(read.query_alignment_qualities),
+             read.query_length,
+             read.query_alignment_length,
+             read.mapping_quality,
+             get_pID(read))
+            for read in samfile.fetch(reference=chromosome, multiple_iterators=True)
+            if not read.is_secondary and not read.is_unmapped]
+    else:
+        return [
+            (read.query_name,
+             nanomath.ave_qual(read.query_qualities),
+             nanomath.ave_qual(read.query_alignment_qualities),
+             read.query_length,
+             read.query_alignment_length,
+             read.mapping_quality,
+             get_pID(read))
+            for read in samfile.fetch(reference=chromosome, multiple_iterators=True)
+            if not read.is_secondary and not read.is_unmapped and not read.is_supplementary]
 
 
 def get_pID(read):
