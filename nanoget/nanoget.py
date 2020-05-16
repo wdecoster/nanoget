@@ -97,7 +97,7 @@ def get_input(source, files, threads=4, readtype="1D",
     datadf = calculate_start_time(datadf)
     logging.info("Nanoget: Gathered all metrics of {} reads".format(len(datadf)))
     if len(datadf) == 0:
-        logging.critical("Nanoget: no reads retrieved.".format(len(datadf)))
+        logging.critical("Nanoget: no reads retrieved.")
         sys.exit("Fatal: No reads found in input.")
     else:
         return datadf
