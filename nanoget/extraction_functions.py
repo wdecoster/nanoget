@@ -156,7 +156,7 @@ def process_bam(bam, **kwargs):
     samfile = check_bam(bam)
     chromosomes = samfile.references
     if len(chromosomes) > 100:
-        unit = None
+        unit = [None]
         logging.info("Nanoget: lots of contigs (>100), not running in separate processes")
     else:
         unit = chromosomes
@@ -191,7 +191,7 @@ def process_cram(cram, **kwargs):
     samfile = check_bam(cram, samtype="cram")
     chromosomes = samfile.references
     if len(chromosomes) > 100:
-        unit = None
+        unit = [None]
         logging.info("Nanoget: lots of contigs (>100), not running in separate processes")
     else:
         unit = chromosomes
