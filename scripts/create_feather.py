@@ -51,6 +51,10 @@ def get_args():
                          help="Print version and exit.",
                          action="version",
                          version='NanoPlot {}'.format(__version__))
+    general.add_argument("-t", "--threads",
+                         help="Set the allowed number of threads to be used by the script",
+                         default=4,
+                         type=int)
     general.add_argument("--huge",
                          help="Input data is one very large file.",
                          action="store_true")
