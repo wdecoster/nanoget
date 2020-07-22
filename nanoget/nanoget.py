@@ -103,7 +103,7 @@ def get_input(source, files, threads=4, readtype="1D",
         return datadf
 
 
-def combine_dfs(dfs, names, method):
+def combine_dfs(dfs, names=None, method='simple'):
     """Combine dataframes.
 
     Combination is either done simple by just concatenating the DataFrames
