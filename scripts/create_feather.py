@@ -4,6 +4,7 @@
 from argparse import ArgumentParser
 from nanoget import get_input
 from nanoplot.version import __version__
+import os
 
 
 def main():
@@ -25,17 +26,19 @@ def main():
         "fasta": args.fasta,
         "ubam": args.ubam,
     }
-
-    get_input(
-        source=[n for n, s in sources.items() if s][0],
-        files=[f for f in sources.values() if f][0],
-        threads=args.threads,
-        readtype=args.readtype,
-        combine="simple",
-        barcoded=args.barcoded,
-        huge=args.huge,
-        keep_supp=not(args.no_supplementary)) \
-        .to_feather(args.output)
+    if os.path.isfile(args.output) and not args.force:
+        print("Output file {} already exists.".format(args.output))
+    else:
+        get_input(
+            source=[n for n, s in sources.items() if s][0],
+            files=[f for f in sources.values() if f][0],
+            threads=args.threads,
+            readtype=args.readtype,
+            combine="simple",
+            barcoded=args.barcoded,
+            huge=args.huge,
+            keep_supp=not(args.no_supplementary)) \
+            .to_feather(args.output)
 
 
 def get_args():
@@ -71,6 +74,10 @@ def get_args():
                          action="store_true")
     general.add_argument("--no_supplementary",
                          help="Use if you want to remove supplementary alignments",
+                         action="store_true",
+                         default=False)
+    general.add_argument("--force",
+                         help="Overwrite existing feather files",
                          action="store_true",
                          default=False)
     target = parser.add_argument_group(
