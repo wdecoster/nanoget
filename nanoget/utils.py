@@ -2,6 +2,7 @@ import sys
 import logging
 import pandas as pd
 from os import path as opath
+from math import log
 
 
 def reduce_memory_usage(df):
