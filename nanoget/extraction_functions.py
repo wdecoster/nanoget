@@ -4,7 +4,6 @@ import nanoget.utils as ut
 import pandas as pd
 import sys
 import pysam
-import nanomath
 import re
 from Bio import SeqIO
 import concurrent.futures as cfutures
@@ -129,7 +128,7 @@ def process_ubam(bam, **kwargs):
         samfile = pysam.AlignmentFile(bam, "rb", check_sq=False)
         logging.info("Nanoget: No index for bam file could be found, created index.")
     datadf = pd.DataFrame(
-        data=[(read.query_name, nanomath.ave_qual(read.query_qualities), read.query_length)
+        data=[(read.query_name, ut.ave_qual(read.query_qualities), read.query_length)
               for read in samfile.fetch(until_eof=True)],
         columns=["readIDs", "quals", "lengths"]) \
         .dropna(axis='columns', how='all') \
@@ -225,8 +224,8 @@ def extract_from_bam(bam, chromosome, keep_supplementary=True):
     if keep_supplementary:
         return [
             (read.query_name,
-             nanomath.ave_qual(read.query_qualities),
-             nanomath.ave_qual(read.query_alignment_qualities),
+             ut.ave_qual(read.query_qualities),
+             ut.ave_qual(read.query_alignment_qualities),
              read.query_length,
              read.query_alignment_length,
              read.mapping_quality,
@@ -236,8 +235,8 @@ def extract_from_bam(bam, chromosome, keep_supplementary=True):
     else:
         return [
             (read.query_name,
-             nanomath.ave_qual(read.query_qualities),
-             nanomath.ave_qual(read.query_alignment_qualities),
+             ut.ave_qual(read.query_qualities),
+             ut.ave_qual(read.query_alignment_qualities),
              read.query_length,
              read.query_alignment_length,
              read.mapping_quality,
@@ -330,7 +329,7 @@ def extract_from_fastq(fq):
     Return average quality and read length
     """
     for rec in SeqIO.parse(fq, "fastq"):
-        yield nanomath.ave_qual(rec.letter_annotations["phred_quality"]), len(rec)
+        yield ut.ave_qual(rec.letter_annotations["phred_quality"]), len(rec)
 
 
 def stream_fastq_full(fastq, threads):
@@ -356,8 +355,8 @@ def extract_all_from_fastq(rec):
     """
     return (rec.id,
             len(rec),
-            nanomath.ave_qual(rec.letter_annotations["phred_quality"]),
-            nanomath.median_qual(rec.letter_annotations["phred_quality"]))
+            ut.ave_qual(rec.letter_annotations["phred_quality"]),
+            None)
 
 
 def info_to_dict(info):
@@ -384,7 +383,7 @@ def process_fastq_rich(fastq, **kwargs):
         try:
             read_info = info_to_dict(record.description)
             res.append(
-                (nanomath.ave_qual(record.letter_annotations["phred_quality"]),
+                (ut.ave_qual(record.letter_annotations["phred_quality"]),
                  len(record),
                  read_info["ch"],
                  read_info["start_time"],

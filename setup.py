@@ -36,7 +36,6 @@ setup(
     install_requires=['pandas>=0.22.0',
                       'numpy',
                       'biopython',
-                      'pysam>0.10.0.0',
-                      'nanomath'],
+                      'pysam>0.10.0.0'],
     package_dir={'nanoget': 'nanoget'},
     data_files=[("", ["LICENSE"])])

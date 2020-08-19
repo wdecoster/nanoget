@@ -32,3 +32,26 @@ def check_existance(f):
     if not opath.isfile(f):
         logging.error("Nanoget: File provided doesn't exist or the path is incorrect: {}".format(f))
         sys.exit("File provided doesn't exist or the path is incorrect: {}".format(f))
+
+
+def errs_tab(n):
+    """Generate list of error rates for qualities less than equal than n."""
+    return [10**(q / -10) for q in range(n+1)]
+
+
+def ave_qual(quals, qround=False, tab=errs_tab(128)):
+    """Calculate average basecall quality of a read.
+
+    Receive the integer quality scores of a read and return the average quality for that read
+    First convert Phred scores to probabilities,
+    calculate average error probability
+    convert average back to Phred scale
+    """
+    if quals:
+        mq = -10 * log(sum([tab[q] for q in quals]) / len(quals), 10)
+        if qround:
+            return round(mq)
+        else:
+            return mq
+    else:
+        return None
