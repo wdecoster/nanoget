@@ -154,22 +154,28 @@ def process_bam(bam, **kwargs):
     logging.info("Nanoget: Starting to collect statistics from bam file {}.".format(bam))
     samfile = check_bam(bam)
     chromosomes = samfile.references
-    if len(chromosomes) > 100:
-        unit = [None]
-        logging.info("Nanoget: lots of contigs (>100), not running in separate processes")
-    else:
-        unit = chromosomes
-    with cfutures.ProcessPoolExecutor(max_workers=kwargs["threads"]) as executor:
+    if len(chromosomes) > 100 or kwargs["huge"]:
+        logging.info("Nanoget: lots of contigs (>100) or --huge, not running in separate processes")
         datadf = pd.DataFrame(
-            data=[res for sublist in executor.map(extract_from_bam,
-                                                  repeat(bam), unit, repeat(kwargs["keep_supp"]))
-                  for res in sublist],
+            data=extract_from_bam(bam, None, kwargs["keep_supp"]),
             columns=["readIDs", "quals", "aligned_quals", "lengths",
                      "aligned_lengths", "mapQ", "percentIdentity"]) \
             .dropna(axis='columns', how='all') \
             .dropna(axis='index', how='any')
-    logging.info("Nanoget: bam {} contains {} primary alignments.".format(
-        bam, datadf["lengths"].size))
+
+    else:
+        unit = chromosomes
+        with cfutures.ProcessPoolExecutor(max_workers=kwargs["threads"]) as executor:
+            datadf = pd.DataFrame(
+                data=[res for sublist in executor.map(extract_from_bam,
+                                                      repeat(bam),
+                                                      unit,
+                                                      repeat(kwargs["keep_supp"]))
+                      for res in sublist],
+                columns=["readIDs", "quals", "aligned_quals", "lengths",
+                         "aligned_lengths", "mapQ", "percentIdentity"]) \
+                .dropna(axis='columns', how='all') \
+                .dropna(axis='index', how='any')
     logging.info(f"Nanoget: bam {bam} contains {datadf['lengths'].size} primary alignments.")
     return ut.reduce_memory_usage(datadf)
 

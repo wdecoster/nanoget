@@ -80,7 +80,8 @@ def get_input(source, files, threads=4, readtype="1D",
                                         threads=threadsleft,
                                         readtype=readtype,
                                         barcoded=barcoded,
-                                        keep_supp=keep_supp)
+                                        keep_supp=keep_supp,
+                                        huge=True)
     else:
         with cfutures.ProcessPoolExecutor(max_workers=filethreads) as executor:
             extraction_function = partial(proc_functions[source],
