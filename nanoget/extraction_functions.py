@@ -170,6 +170,7 @@ def process_bam(bam, **kwargs):
             .dropna(axis='index', how='any')
     logging.info("Nanoget: bam {} contains {} primary alignments.".format(
         bam, datadf["lengths"].size))
+    logging.info(f"Nanoget: bam {bam} contains {datadf['lengths'].size} primary alignments.")
     return ut.reduce_memory_usage(datadf)
 
 
@@ -203,8 +204,7 @@ def process_cram(cram, **kwargs):
                      "aligned_lengths", "mapQ", "percentIdentity"]) \
             .dropna(axis='columns', how='all') \
             .dropna(axis='index', how='any')
-    logging.info("Nanoget: cram {} contains {} primary alignments.".format(
-        cram, datadf["lengths"].size))
+    logging.info(f"Nanoget: cram {cram} contains {datadf['lengths'].size} primary alignments.")
     return ut.reduce_memory_usage(datadf)
 
 
