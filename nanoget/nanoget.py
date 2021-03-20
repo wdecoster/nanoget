@@ -88,7 +88,8 @@ def get_input(source, files, threads=4, readtype="1D",
                                           threads=threadsleft,
                                           readtype=readtype,
                                           barcoded=barcoded,
-                                          keep_supp=keep_supp)
+                                          keep_supp=keep_supp,
+                                          huge=False)
             datadf = combine_dfs(
                 dfs=[out for out in executor.map(extraction_function, files)],
                 names=names or files,
