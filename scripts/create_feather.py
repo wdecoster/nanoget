@@ -3,7 +3,6 @@
 
 from argparse import ArgumentParser
 from nanoget import get_input
-from nanoplot.version import __version__
 import os
 
 
@@ -50,10 +49,6 @@ def get_args():
     general.add_argument("-h", "--help",
                          action="help",
                          help="show the help and exit")
-    general.add_argument("-v", "--version",
-                         help="Print version and exit.",
-                         action="version",
-                         version='NanoPlot {}'.format(__version__))
     general.add_argument("-t", "--threads",
                          help="Set the allowed number of threads to be used by the script",
                          default=4,
