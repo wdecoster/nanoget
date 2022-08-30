@@ -154,8 +154,8 @@ def process_bam(bam, **kwargs):
     logging.info("Nanoget: Starting to collect statistics from bam file {}.".format(bam))
     samfile = check_bam(bam)
     chromosomes = samfile.references
-    if len(chromosomes) > 100 or kwargs["huge"]:
-        logging.info("Nanoget: lots of contigs (>100) or --huge, not running in separate processes")
+    if len(chromosomes) > 200 or kwargs["huge"]:
+        logging.info("Nanoget: lots of contigs (>200) or --huge, not running in separate processes")
         datadf = pd.DataFrame(
             data=extract_from_bam(bam, None, kwargs["keep_supp"]),
             columns=["readIDs", "quals", "aligned_quals", "lengths",
