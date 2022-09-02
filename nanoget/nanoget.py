@@ -26,8 +26,17 @@ import concurrent.futures as cfutures
 import nanoget.extraction_functions as ex
 
 
-def get_input(source, files, threads=4, readtype="1D",
-              combine="simple", names=None, barcoded=False, huge=False, keep_supp=True):
+def get_input(
+    source,
+    files,
+    threads=4,
+    readtype="1D",
+    combine="simple",
+    names=None,
+    barcoded=False,
+    huge=False,
+    keep_supp=True,
+):
     """Get input and process accordingly.
 
     Data can be:
@@ -55,14 +64,15 @@ def get_input(source, files, threads=4, readtype="1D",
       files, or None
     """
     proc_functions = {
-        'fastq': ex.process_fastq_plain,
-        'fasta': ex.process_fasta,
-        'bam': ex.process_bam,
-        'summary': ex.process_summary,
-        'fastq_rich': ex.process_fastq_rich,
-        'fastq_minimal': ex.process_fastq_minimal,
-        'cram': ex.process_cram,
-        'ubam': ex.process_ubam, }
+        "fastq": ex.process_fastq_plain,
+        "fasta": ex.process_fasta,
+        "bam": ex.process_bam,
+        "summary": ex.process_summary,
+        "fastq_rich": ex.process_fastq_rich,
+        "fastq_minimal": ex.process_fastq_minimal,
+        "cram": ex.process_cram,
+        "ubam": ex.process_ubam,
+    }
 
     if source not in proc_functions.keys():
         logging.error("nanoget: Unsupported data source: {}".format(source))
@@ -73,29 +83,36 @@ def get_input(source, files, threads=4, readtype="1D",
         logging.info("nanoget: Running with a single huge input file.")
         if not len(files) == 1:
             logging.error("nanoget: Using multiple huge input files is currently not supported.")
-            sys.exit("Using multiple huge input files is currently not supported.\n"
-                     "Please let me know on GitHub if that's of interest for your application.\n")
+            sys.exit(
+                "Using multiple huge input files is currently not supported.\n"
+                "Please let me know on GitHub if that's of interest for your application.\n"
+            )
 
-        datadf = proc_functions[source](files[0],
-                                        threads=threadsleft,
-                                        readtype=readtype,
-                                        barcoded=barcoded,
-                                        keep_supp=keep_supp,
-                                        huge=True)
+        datadf = proc_functions[source](
+            files[0],
+            threads=threadsleft,
+            readtype=readtype,
+            barcoded=barcoded,
+            keep_supp=keep_supp,
+            huge=True,
+        )
     else:
         with cfutures.ProcessPoolExecutor(max_workers=filethreads) as executor:
-            extraction_function = partial(proc_functions[source],
-                                          threads=threadsleft,
-                                          readtype=readtype,
-                                          barcoded=barcoded,
-                                          keep_supp=keep_supp,
-                                          huge=False)
+            extraction_function = partial(
+                proc_functions[source],
+                threads=threadsleft,
+                readtype=readtype,
+                barcoded=barcoded,
+                keep_supp=keep_supp,
+                huge=False,
+            )
             datadf = combine_dfs(
                 dfs=[out for out in executor.map(extraction_function, files)],
                 names=names or files,
-                method=combine)
+                method=combine,
+            )
     if "readIDs" in datadf.columns and pd.isna(datadf["readIDs"]).any():
-        datadf.drop("readIDs", axis='columns', inplace=True)
+        datadf.drop("readIDs", axis="columns", inplace=True)
     datadf = calculate_start_time(datadf)
     logging.info("Nanoget: Gathered all metrics of {} reads".format(len(datadf)))
     if len(datadf) == 0:
@@ -105,14 +122,13 @@ def get_input(source, files, threads=4, readtype="1D",
         return datadf
 
 
-def combine_dfs(dfs, names=None, method='simple'):
+def combine_dfs(dfs, names=None, method="simple"):
     """Combine dataframes.
 
     Combination is either done simple by just concatenating the DataFrames
     or performs tracking by adding the name of the dataset as a column."""
     if method == "track":
-        return pd.concat([df.assign(dataset=n) for df, n in zip(dfs, names)],
-                         ignore_index=True)
+        return pd.concat([df.assign(dataset=n) for df, n in zip(dfs, names)], ignore_index=True)
     elif method == "simple":
         return pd.concat(dfs, ignore_index=True)
 
@@ -132,16 +148,17 @@ def calculate_start_time(df):
     subtraction is done per dataset
     """
     if "time" in df.columns:
-        df["time_arr"] = pd.Series(df["time"], dtype='datetime64[s]')
+        df["time_arr"] = pd.Series(df["time"], dtype="datetime64[s]")
     elif "timestamp" in df.columns:
-        df["time_arr"] = pd.Series(df["timestamp"], dtype="datetime64[ns]")
+        df["time_arr"] = df["timestamp"]
     else:
         return df
     if "dataset" in df.columns:
         for dset in df["dataset"].unique():
             time_zero = df.loc[df["dataset"] == dset, "time_arr"].min()
-            df.loc[df["dataset"] == dset, "start_time"] = \
+            df.loc[df["dataset"] == dset, "start_time"] = (
                 df.loc[df["dataset"] == dset, "time_arr"] - time_zero
+            )
     else:
         df["start_time"] = df["time_arr"] - df["time_arr"].min()
     return df.drop(["time", "timestamp", "time_arr"], axis=1, errors="ignore")

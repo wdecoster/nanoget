@@ -59,12 +59,18 @@ def process_summary(summaryfile, **kwargs):
     37    kit
     38    variant
     """
-    logging.info("Nanoget: Collecting metrics from summary file {} for {} sequencing".format(
-        summaryfile, kwargs["readtype"]))
+    logging.info(
+        f"Nanoget: Collecting metrics from summary file {summaryfile} for {kwargs['readtype']} sequencing"
+    )
     ut.check_existance(summaryfile)
     if kwargs["readtype"] == "1D":
-        cols = ["channel", "start_time", "duration",
-                "sequence_length_template", "mean_qscore_template"]
+        cols = [
+            "channel",
+            "start_time",
+            "duration",
+            "sequence_length_template",
+            "mean_qscore_template",
+        ]
     elif kwargs["readtype"] in ["2D", "1D2"]:
         cols = ["channel", "start_time", "duration", "sequence_length_2d", "mean_qscore_2d"]
     if kwargs["barcoded"]:
@@ -77,10 +83,16 @@ def process_summary(summaryfile, **kwargs):
             usecols=cols,
         )
     except ValueError:
-        logging.error("Nanoget: did not find expected columns in summary file {}:\n {}".format(
-            summaryfile, ', '.join(cols)))
-        sys.exit("ERROR: expected columns in summary file {} not found:\n {}".format(
-            summaryfile, ', '.join(cols)))
+        logging.error(
+            "Nanoget: did not find expected columns in summary file {}:\n {}".format(
+                summaryfile, ", ".join(cols)
+            )
+        )
+        sys.exit(
+            "ERROR: expected columns in summary file {} not found:\n {}".format(
+                summaryfile, ", ".join(cols)
+            )
+        )
     if kwargs["barcoded"]:
         datadf.columns = ["channelIDs", "time", "duration", "lengths", "quals", "barcode"]
     else:
@@ -104,12 +116,15 @@ def check_bam(bam, samtype="bam"):
         pysam.index(bam)
         samfile = pysam.AlignmentFile(bam, "rb")  # Need to reload the samfile after creating index
         logging.info("Nanoget: No index for bam file could be found, created index.")
-    if not samfile.header['HD']['SO'] == 'coordinate':
+    if not samfile.header["HD"]["SO"] == "coordinate":
         logging.error("Nanoget: Bam file {} not sorted by coordinate!.".format(bam))
         sys.exit("Please use a bam file sorted by coordinate.")
     if samtype == "bam":
-        logging.info("Nanoget: Bam file {} contains {} mapped and {} unmapped reads.".format(
-            bam, samfile.mapped, samfile.unmapped))
+        logging.info(
+            "Nanoget: Bam file {} contains {} mapped and {} unmapped reads.".format(
+                bam, samfile.mapped, samfile.unmapped
+            )
+        )
         if samfile.mapped == 0:
             logging.error("Nanoget: Bam file {} does not contain aligned reads.".format(bam))
             sys.exit("FATAL: not a single read was mapped in bam file {}".format(bam))
@@ -127,14 +142,18 @@ def process_ubam(bam, **kwargs):
         # Need to reload the samfile after creating index
         samfile = pysam.AlignmentFile(bam, "rb", check_sq=False)
         logging.info("Nanoget: No index for bam file could be found, created index.")
-    datadf = pd.DataFrame(
-        data=[(read.query_name, ut.ave_qual(read.query_qualities), read.query_length)
-              for read in samfile.fetch(until_eof=True)],
-        columns=["readIDs", "quals", "lengths"]) \
-        .dropna(axis='columns', how='all') \
-        .dropna(axis='index', how='any')
-    logging.info("Nanoget: ubam {} contains {} reads.".format(
-        bam, datadf["lengths"].size))
+    datadf = (
+        pd.DataFrame(
+            data=[
+                (read.query_name, ut.ave_qual(read.query_qualities), read.query_length)
+                for read in samfile.fetch(until_eof=True)
+            ],
+            columns=["readIDs", "quals", "lengths"],
+        )
+        .dropna(axis="columns", how="all")
+        .dropna(axis="index", how="any")
+    )
+    logging.info("Nanoget: ubam {} contains {} reads.".format(bam, datadf["lengths"].size))
     return ut.reduce_memory_usage(datadf)
 
 
@@ -156,26 +175,48 @@ def process_bam(bam, **kwargs):
     chromosomes = samfile.references
     if len(chromosomes) > 200 or kwargs["huge"]:
         logging.info("Nanoget: lots of contigs (>200) or --huge, not running in separate processes")
-        datadf = pd.DataFrame(
-            data=extract_from_bam(bam, None, kwargs["keep_supp"]),
-            columns=["readIDs", "quals", "aligned_quals", "lengths",
-                     "aligned_lengths", "mapQ", "percentIdentity"]) \
-            .dropna(axis='columns', how='all') \
-            .dropna(axis='index', how='any')
+        datadf = (
+            pd.DataFrame(
+                data=extract_from_bam(bam, None, kwargs["keep_supp"]),
+                columns=[
+                    "readIDs",
+                    "quals",
+                    "aligned_quals",
+                    "lengths",
+                    "aligned_lengths",
+                    "mapQ",
+                    "percentIdentity",
+                ],
+            )
+            .dropna(axis="columns", how="all")
+            .dropna(axis="index", how="any")
+        )
 
     else:
         unit = chromosomes
         with cfutures.ProcessPoolExecutor(max_workers=kwargs["threads"]) as executor:
-            datadf = pd.DataFrame(
-                data=[res for sublist in executor.map(extract_from_bam,
-                                                      repeat(bam),
-                                                      unit,
-                                                      repeat(kwargs["keep_supp"]))
-                      for res in sublist],
-                columns=["readIDs", "quals", "aligned_quals", "lengths",
-                         "aligned_lengths", "mapQ", "percentIdentity"]) \
-                .dropna(axis='columns', how='all') \
-                .dropna(axis='index', how='any')
+            datadf = (
+                pd.DataFrame(
+                    data=[
+                        res
+                        for sublist in executor.map(
+                            extract_from_bam, repeat(bam), unit, repeat(kwargs["keep_supp"])
+                        )
+                        for res in sublist
+                    ],
+                    columns=[
+                        "readIDs",
+                        "quals",
+                        "aligned_quals",
+                        "lengths",
+                        "aligned_lengths",
+                        "mapQ",
+                        "percentIdentity",
+                    ],
+                )
+                .dropna(axis="columns", how="all")
+                .dropna(axis="index", how="any")
+            )
     logging.info(f"Nanoget: bam {bam} contains {datadf['lengths'].size} primary alignments.")
     return ut.reduce_memory_usage(datadf)
 
@@ -202,14 +243,28 @@ def process_cram(cram, **kwargs):
     else:
         unit = chromosomes
     with cfutures.ProcessPoolExecutor(max_workers=kwargs["threads"]) as executor:
-        datadf = pd.DataFrame(
-            data=[res for sublist in executor.map(extract_from_bam,
-                                                  repeat(cram), unit, repeat(kwargs["keep_supp"]))
-                  for res in sublist],
-            columns=["readIDs", "quals", "aligned_quals", "lengths",
-                     "aligned_lengths", "mapQ", "percentIdentity"]) \
-            .dropna(axis='columns', how='all') \
-            .dropna(axis='index', how='any')
+        datadf = (
+            pd.DataFrame(
+                data=[
+                    res
+                    for sublist in executor.map(
+                        extract_from_bam, repeat(cram), unit, repeat(kwargs["keep_supp"])
+                    )
+                    for res in sublist
+                ],
+                columns=[
+                    "readIDs",
+                    "quals",
+                    "aligned_quals",
+                    "lengths",
+                    "aligned_lengths",
+                    "mapQ",
+                    "percentIdentity",
+                ],
+            )
+            .dropna(axis="columns", how="all")
+            .dropna(axis="index", how="any")
+        )
     logging.info(f"Nanoget: cram {cram} contains {datadf['lengths'].size} primary alignments.")
     return ut.reduce_memory_usage(datadf)
 
@@ -229,26 +284,32 @@ def extract_from_bam(bam, chromosome, keep_supplementary=True):
     samfile = pysam.AlignmentFile(bam, "rb")
     if keep_supplementary:
         return [
-            (read.query_name,
-             ut.ave_qual(read.query_qualities),
-             ut.ave_qual(read.query_alignment_qualities),
-             read.query_length,
-             read.query_alignment_length,
-             read.mapping_quality,
-             get_pID(read))
+            (
+                read.query_name,
+                ut.ave_qual(read.query_qualities),
+                ut.ave_qual(read.query_alignment_qualities),
+                read.query_length,
+                read.query_alignment_length,
+                read.mapping_quality,
+                get_pID(read),
+            )
             for read in samfile.fetch(reference=chromosome, multiple_iterators=True)
-            if not read.is_secondary and not read.is_unmapped]
+            if not read.is_secondary and not read.is_unmapped
+        ]
     else:
         return [
-            (read.query_name,
-             ut.ave_qual(read.query_qualities),
-             ut.ave_qual(read.query_alignment_qualities),
-             read.query_length,
-             read.query_alignment_length,
-             read.mapping_quality,
-             get_pID(read))
+            (
+                read.query_name,
+                ut.ave_qual(read.query_qualities),
+                ut.ave_qual(read.query_alignment_qualities),
+                read.query_length,
+                read.query_alignment_length,
+                read.mapping_quality,
+                get_pID(read),
+            )
             for read in samfile.fetch(reference=chromosome, multiple_iterators=True)
-            if not read.is_secondary and not read.is_unmapped and not read.is_supplementary]
+            if not read.is_secondary and not read.is_unmapped and not read.is_supplementary
+        ]
 
 
 def get_pID(read):
@@ -267,8 +328,10 @@ def get_pID(read):
         return (1 - read.get_tag("NM") / alignment_length) * 100
     except KeyError:
         try:
-            return 100 * (1 - (parse_MD(read.get_tag("MD")) + parse_CIGAR(read.cigartuples)) /
-                          alignment_length)
+            return 100 * (
+                1
+                - (parse_MD(read.get_tag("MD")) + parse_CIGAR(read.cigartuples)) / alignment_length
+            )
         except KeyError:
             return None
     except ZeroDivisionError:
@@ -277,7 +340,7 @@ def get_pID(read):
 
 def parse_MD(MDlist):
     """Parse MD string to get number of mismatches and deletions."""
-    return sum([len(item) for item in re.split('[0-9^]', MDlist)])
+    return sum([len(item) for item in re.split("[0-9^]", MDlist)])
 
 
 def parse_CIGAR(cigartuples):
@@ -293,40 +356,47 @@ def handle_compressed_input(inputfq, file_type="fastq"):
     Relies on file extensions to recognize compression
     """
     ut.check_existance(inputfq)
-    if inputfq.endswith(('.gz', 'bgz')):
+    if inputfq.endswith((".gz", "bgz")):
         import gzip
+
         logging.info("Nanoget: Decompressing gzipped {} {}".format(file_type, inputfq))
-        return gzip.open(inputfq, 'rt')
-    elif inputfq.endswith('.bz2'):
+        return gzip.open(inputfq, "rt")
+    elif inputfq.endswith(".bz2"):
         import bz2
+
         logging.info("Nanoget: Decompressing bz2 compressed {} {}".format(file_type, inputfq))
-        return bz2.open(inputfq, 'rt')
-    elif inputfq.endswith(('.fastq', '.fq', 'fasta', '.fa', '.fas')):
-        return open(inputfq, 'r')
+        return bz2.open(inputfq, "rt")
+    elif inputfq.endswith((".fastq", ".fq", "fasta", ".fa", ".fas")):
+        return open(inputfq, "r")
     else:
         logging.error("INPUT ERROR: Unrecognized file extension {}".format(inputfq))
-        sys.exit('INPUT ERROR:\nUnrecognized file extension in {}\n'
-                 'Supported are gz, bz2, bgz, fastq, fq, fasta, fa and fas'.format(inputfq))
+        sys.exit(
+            "INPUT ERROR:\nUnrecognized file extension in {}\n"
+            "Supported are gz, bz2, bgz, fastq, fq, fasta, fa and fas".format(inputfq)
+        )
 
 
 def process_fasta(fasta, **kwargs):
     """Combine metrics extracted from a fasta file."""
     logging.info("Nanoget: Starting to collect statistics from a fasta file.")
     inputfasta = handle_compressed_input(fasta, file_type="fasta")
-    return ut.reduce_memory_usage(pd.DataFrame(
-        data=[len(rec) for rec in SeqIO.parse(inputfasta, "fasta")],
-        columns=["lengths"]
-    ).dropna())
+    return ut.reduce_memory_usage(
+        pd.DataFrame(
+            data=[len(rec) for rec in SeqIO.parse(inputfasta, "fasta")], columns=["lengths"]
+        ).dropna()
+    )
 
 
 def process_fastq_plain(fastq, **kwargs):
     """Combine metrics extracted from a fastq file."""
     logging.info("Nanoget: Starting to collect statistics from plain fastq file.")
     inputfastq = handle_compressed_input(fastq)
-    return ut.reduce_memory_usage(pd.DataFrame(
-        data=[res for res in extract_from_fastq(inputfastq) if res],
-        columns=["quals", "lengths"]
-    ).dropna())
+    return ut.reduce_memory_usage(
+        pd.DataFrame(
+            data=[res for res in extract_from_fastq(inputfastq) if res],
+            columns=["quals", "lengths"],
+        ).dropna()
+    )
 
 
 def extract_from_fastq(fq):
@@ -359,15 +429,12 @@ def extract_all_from_fastq(rec):
 
     Return identifier, read length, average quality and median quality
     """
-    return (rec.id,
-            len(rec),
-            ut.ave_qual(rec.letter_annotations["phred_quality"]),
-            None)
+    return (rec.id, len(rec), ut.ave_qual(rec.letter_annotations["phred_quality"]), None)
 
 
 def info_to_dict(info):
     """Get the key-value pairs from the albacore/minknow fastq description and return dict"""
-    return {field.split('=')[0]: field.split('=')[1] for field in info.split(' ')[1:]}
+    return {field.split("=")[0]: field.split("=")[1] for field in info.split(" ")[1:]}
 
 
 def process_fastq_rich(fastq, **kwargs):
@@ -389,19 +456,26 @@ def process_fastq_rich(fastq, **kwargs):
         try:
             read_info = info_to_dict(record.description)
             res.append(
-                (ut.ave_qual(record.letter_annotations["phred_quality"]),
-                 len(record),
-                 read_info["ch"],
-                 read_info["start_time"],
-                 read_info["runid"]))
+                (
+                    ut.ave_qual(record.letter_annotations["phred_quality"]),
+                    len(record),
+                    read_info["ch"],
+                    read_info["start_time"],
+                    read_info["runid"],
+                )
+            )
         except KeyError:
             logging.error("Nanoget: keyerror when processing record {}".format(record.description))
-            sys.exit("Unexpected fastq identifier:\n{}\n\n \
+            sys.exit(
+                "Unexpected fastq identifier:\n{}\n\n \
             missing one or more of expected fields 'ch', 'start_time' or 'runid'".format(
-                record.description))
+                    record.description
+                )
+            )
     df = pd.DataFrame(
-        data=res,
-        columns=["quals", "lengths", "channelIDs", "timestamp", "runIDs"]).dropna()
+        data=res, columns=["quals", "lengths", "channelIDs", "timestamp", "runIDs"]
+    ).dropna()
+    df["timestamp"] = df["timestamp"].astype("datetime64[ns]")
     df["channelIDs"] = df["channelIDs"].astype("int64")
     return ut.reduce_memory_usage(df)
 
@@ -412,29 +486,29 @@ def readfq(fp):
     while True:  # mimic closure; is it a bad idea?
         if not last:  # the first record or a record following a fastq
             for l in fp:  # search for the start of the next record
-                if l[0] in '>@':  # fasta/q header line
+                if l[0] in ">@":  # fasta/q header line
                     last = l[:-1]  # save this line
                     break
         if not last:
             break
         name, seqs, last = last[1:].partition(" ")[0], [], None
         for l in fp:  # read the sequence
-            if l[0] in '@+>':
+            if l[0] in "@+>":
                 last = l[:-1]
                 break
             seqs.append(l[:-1])
-        if not last or last[0] != '+':  # this is a fasta record
-            yield name, ''.join(seqs), None  # yield a fasta record
+        if not last or last[0] != "+":  # this is a fasta record
+            yield name, "".join(seqs), None  # yield a fasta record
             if not last:
                 break
         else:  # this is a fastq record
-            seq, leng, seqs = ''.join(seqs), 0, []
+            seq, leng, seqs = "".join(seqs), 0, []
             for l in fp:  # read the quality
                 seqs.append(l[:-1])
                 leng += len(l) - 1
                 if leng >= len(seq):  # have read enough quality
                     last = None
-                    yield name, seq, ''.join(seqs)  # yield a fastq record
+                    yield name, seq, "".join(seqs)  # yield a fastq record
                     break
             if last:  # reach EOF before reading enough quality
                 yield name, seq, None  # yield a fasta record instead
@@ -464,8 +538,7 @@ def process_fastq_minimal(fastq, **kwargs):
     infastq = handle_compressed_input(fastq)
     try:
         df = pd.DataFrame(
-            data=[rec for rec in fq_minimal(infastq) if rec],
-            columns=["timestamp", "lengths"]
+            data=[rec for rec in fq_minimal(infastq) if rec], columns=["timestamp", "lengths"]
         )
     except IndexError:
         logging.error("Fatal: Incorrect file structure for fastq_minimal")
