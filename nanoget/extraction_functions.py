@@ -8,7 +8,8 @@ import re
 from Bio import SeqIO
 import concurrent.futures as cfutures
 from itertools import repeat
-
+import datetime
+import pytz
 
 def process_summary(summaryfile, **kwargs):
     """Extracting information from an albacore summary file.
@@ -475,6 +476,7 @@ def process_fastq_rich(fastq, **kwargs):
     df = pd.DataFrame(
         data=res, columns=["quals", "lengths", "channelIDs", "timestamp", "runIDs"]
     ).dropna()
+    df['timestamp'] = [datetime.datetime.fromisoformat(q).astimezone(pytz.UTC).replace(tzinfo=None) for q in df['timestamp']]
     df["timestamp"] = df["timestamp"].astype("datetime64[ns]")
     df["channelIDs"] = df["channelIDs"].astype("int64")
     return ut.reduce_memory_usage(df)
