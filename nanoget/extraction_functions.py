@@ -465,17 +465,15 @@ def process_fastq_rich(fastq, **kwargs):
                 )
             )
         except KeyError:
-            logging.error("Nanoget: keyerror when processing record {}".format(record.description))
+            logging.error(f"Nanoget: keyerror when processing record {record.description}")
             sys.exit(
-                "Unexpected fastq identifier:\n{}\n\n \
-            missing one or more of expected fields 'ch', 'start_time' or 'runid'".format(
-                    record.description
-                )
+                f"Unexpected fastq identifier:\n{record.description}\n\n \
+            missing one or more of expected fields 'ch', 'start_time' or 'runid'"
             )
     df = pd.DataFrame(
         data=res, columns=["quals", "lengths", "channelIDs", "timestamp", "runIDs"]
     ).dropna()
-    df["timestamp"] = df["timestamp"].astype("datetime64[ns]")
+    df["timestamp"] = pd.to_datetime(df["timestamp"])
     df["channelIDs"] = df["channelIDs"].astype("int64")
     return ut.reduce_memory_usage(df)
 

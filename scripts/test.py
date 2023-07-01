@@ -12,5 +12,5 @@ def run_tests():
     nanoget.get_input("fasta", ["nanotest/reads.fa.gz"])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     run_tests()
