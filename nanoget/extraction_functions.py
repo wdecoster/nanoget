@@ -541,5 +541,5 @@ def process_fastq_minimal(fastq, **kwargs):
     except IndexError:
         logging.error("Fatal: Incorrect file structure for fastq_minimal")
         sys.exit("Error: file does not match expected structure for fastq_minimal")
-    df["timestamp"] = df["timestamp"].astype("datetime64[ns]")
+    df["timestamp"] = pd.to_datetime(df["timestamp"])
     return ut.reduce_memory_usage(df)
