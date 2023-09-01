@@ -151,7 +151,7 @@ def calculate_start_time(df):
     if "time" in df.columns:
         df["time_arr"] = pd.Series(df["time"], dtype="datetime64[s]")
     elif "timestamp" in df.columns:
-        df["time_arr"] = df["timestamp"]
+        df["time_arr"] = df["timestamp"].dt.tz_convert('UTC').dt.tz_localize(None)
     else:
         return df
 
