@@ -11,7 +11,7 @@ from itertools import repeat
 
 
 def process_summary(summaryfile, **kwargs):
-    """Extracting information from an albacore summary file.
+    """Extracting information from an albacore/guppy/dorado summary file.
 
     Only reads which have a >0 length are returned.
 
@@ -237,7 +237,7 @@ def process_cram(cram, **kwargs):
     logging.info("Nanoget: Starting to collect statistics from cram file {}.".format(cram))
     samfile = check_bam(cram, samtype="cram")
     chromosomes = samfile.references
-    if len(chromosomes) > 100:
+    if len(chromosomes) > 200:
         unit = [None]
         logging.info("Nanoget: lots of contigs (>100), not running in separate processes")
     else:
