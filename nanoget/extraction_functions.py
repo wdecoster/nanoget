@@ -473,7 +473,7 @@ def process_fastq_rich(fastq, **kwargs):
     df = pd.DataFrame(
         data=res, columns=["quals", "lengths", "channelIDs", "timestamp", "runIDs"]
     ).dropna()
-    df["timestamp"] = pd.to_datetime(df["timestamp"], format='ISO8601')
+    df["timestamp"] = pd.to_datetime(df["timestamp"], format='ISO8601', errors='coerce')
     df["channelIDs"] = df["channelIDs"].astype("int64")
     return ut.reduce_memory_usage(df)
 
