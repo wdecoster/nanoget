@@ -137,11 +137,7 @@ def process_ubam(bam, **kwargs):
     """
     logging.info("Nanoget: Starting to collect statistics from ubam file {}.".format(bam))
     samfile = pysam.AlignmentFile(bam, "rb", check_sq=False)
-    if not samfile.has_index():
-        pysam.index(bam)
-        # Need to reload the samfile after creating index
-        samfile = pysam.AlignmentFile(bam, "rb", check_sq=False)
-        logging.info("Nanoget: No index for bam file could be found, created index.")
+    # No index needed for sequential reading with until_eof=True
     datadf = (
         pd.DataFrame(
             data=[
