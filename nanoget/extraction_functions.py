@@ -428,9 +428,38 @@ def extract_all_from_fastq(rec):
     return (rec.id, len(rec), ut.ave_qual(rec.letter_annotations["phred_quality"]), None)
 
 
+# Mapping of SAM-style tags (MinKNOW >= 26.01) to the legacy key=value field names.
+# The newer format follows the SAM spec, e.g. "ch:i:123" instead of "ch=123",
+# and renames some fields: read start time "start_time" -> "st", run id "runid" -> "RG".
+SAM_TAG_TO_LEGACY_KEY = {"ch": "ch", "st": "start_time", "RG": "runid"}
+
+
 def info_to_dict(info):
-    """Get the key-value pairs from the albacore/minknow fastq description and return dict"""
-    return {field.split("=")[0]: field.split("=")[1] for field in info.split(" ")[1:]}
+    """Get the key-value pairs from the albacore/minknow/dorado fastq description.
+
+    Supports both the legacy "key=value" format (e.g. "ch=123") and the newer
+    SAM-style "tag:type:value" format introduced in MinKNOW 26.01 (e.g. "ch:i:123"),
+    transparently returning a dict keyed by the legacy field names so that downstream
+    code keeps working regardless of which format the file uses.
+    """
+    fields = info.split(" ")[1:]
+    if fields and "=" in fields[0]:
+        # Legacy albacore/MinKNOW format: every field is "key=value".
+        return {key: value for key, _, value in (field.partition("=") for field in fields)}
+    # SAM-style format: "tag:type:value". Only the fields we need are extracted and
+    # remapped to their legacy key names; the run id tag (RG) embeds the runid as its
+    # first underscore-separated component (e.g. "<runid>_<model>@<version>_<barcode>").
+    data = {}
+    for field in fields:
+        tag, _, rest = field.partition(":")
+        key = SAM_TAG_TO_LEGACY_KEY.get(tag)
+        if key is None:
+            continue
+        value = rest.partition(":")[2]
+        if key == "runid":
+            value = value.partition("_")[0]
+        data[key] = value
+    return data
 
 
 def process_fastq_rich(fastq, **kwargs):
