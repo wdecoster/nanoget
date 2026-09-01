@@ -64,41 +64,94 @@ def process_summary(summaryfile, **kwargs):
     )
     ut.check_existance(summaryfile)
     if kwargs["readtype"] == "1D":
-        cols = [
-            "channel",
-            "start_time",
-            "duration",
-            "sequence_length_template",
-            "mean_qscore_template",
-        ]
+        colnames = {
+            "channel": "channelIDs",
+            "start_time": "time",
+            "duration": "duration",
+            "sequence_length_template": "lengths",
+            "mean_qscore_template": "quals",
+        }
     elif kwargs["readtype"] in ["2D", "1D2"]:
-        cols = ["channel", "start_time", "duration", "sequence_length_2d", "mean_qscore_2d"]
+        colnames = {
+            "channel": "channelIDs",
+            "start_time": "time",
+            "duration": "duration",
+            "sequence_length_2d": "lengths",
+            "mean_qscore_2d": "quals",
+        }
+    # columns read to work around the dorado bug below, dropped again before returning
+    extra_cols = []
     if kwargs["barcoded"]:
-        cols.append("barcode_arrangement")
         logging.info("Nanoget: Extracting metrics per barcode.")
+        available = summary_columns(summaryfile)
+        if "barcode_arrangement" not in available and "alias" in available:
+            colnames["alias"] = "barcode"
+        else:
+            colnames["barcode_arrangement"] = "barcode"
+            if "alias" in available:
+                extra_cols.append("alias")
     try:
         datadf = pd.read_csv(
             filepath_or_buffer=summaryfile,
             sep="\t",
-            usecols=cols,
+            usecols=list(colnames) + extra_cols,
         )
     except ValueError:
         logging.error(
             "Nanoget: did not find expected columns in summary file {}:\n {}".format(
-                summaryfile, ", ".join(cols)
+                summaryfile, ", ".join(colnames)
             )
         )
         sys.exit(
             "ERROR: expected columns in summary file {} not found:\n {}".format(
-                summaryfile, ", ".join(cols)
+                summaryfile, ", ".join(colnames)
             )
         )
-    if kwargs["barcoded"]:
-        datadf.columns = ["channelIDs", "time", "duration", "lengths", "quals", "barcode"]
-    else:
-        datadf.columns = ["channelIDs", "time", "duration", "lengths", "quals"]
+    # rename by name rather than by position, read_csv returns the columns in file
+    # order regardless of the order they were requested in
+    datadf = datadf.rename(columns=colnames)
+    if "alias" in extra_cols:
+        datadf = barcodes_from_alias(datadf)
+    datadf = datadf[list(colnames.values())]
     logging.info("Nanoget: Finished collecting statistics from summary file {}".format(summaryfile))
     return ut.reduce_memory_usage(datadf.loc[datadf["lengths"] != 0].copy())
+
+
+def summary_columns(summaryfile):
+    """Return the column names of a summary file, without reading any of the data."""
+    return list(pd.read_csv(filepath_or_buffer=summaryfile, sep="\t", nrows=0).columns)
+
+
+def barcodes_from_alias(datadf):
+    """Recover barcodes that dorado wrote to the alias column only.
+
+    Dorado 2.1.0 and 2.1.1 set barcode_arrangement to "unclassified" for every read
+    in a summary file while still writing the real barcode to alias, which silently
+    collapses every read into a single barcode. Fixed in dorado 2.1.2, but summary
+    files written by the affected versions remain, so fall back to alias when
+    barcode_arrangement carries no information and alias does.
+
+    Both false positives are covered: a genuinely unclassified run has "unclassified"
+    in alias too, and a run with a sample sheet has real barcodes in
+    barcode_arrangement, so in neither case does the fallback kick in.
+
+    See https://github.com/wdecoster/NanoPlot/issues/440
+    """
+    if datadf["barcode"].nunique(dropna=False) != 1:
+        return datadf
+    if datadf["barcode"].iloc[0] != "unclassified":
+        return datadf
+    if datadf["alias"].nunique(dropna=False) < 2:
+        return datadf
+    message = (
+        "Nanoget: barcode_arrangement is 'unclassified' for every read while alias "
+        "contains barcodes, using alias instead. This summary file was written by "
+        "dorado 2.1.0 or 2.1.1, which had a bug in this column (fixed in 2.1.2)."
+    )
+    logging.warning(message)
+    sys.stderr.write("WARNING: " + message + "\n")
+    datadf["barcode"] = datadf["alias"]
+    return datadf
 
 
 def check_bam(bam, samtype="bam"):
