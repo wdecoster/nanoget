@@ -1,5 +1,4 @@
 import logging
-from functools import reduce
 import nanoget.utils as ut
 import pandas as pd
 import sys
@@ -333,32 +332,35 @@ def extract_from_bam(bam, chromosome, keep_supplementary=True):
     samfile = pysam.AlignmentFile(bam, "rb")
     if keep_supplementary:
         return [
-            (
-                read.query_name,
-                ut.ave_qual(read.query_qualities),
-                ut.ave_qual(read.query_alignment_qualities),
-                read.query_length,
-                read.query_alignment_length,
-                read.mapping_quality,
-                get_pID(read),
-            )
+            _read_metrics(read)
             for read in samfile.fetch(reference=chromosome, multiple_iterators=True)
             if not read.is_secondary and not read.is_unmapped
         ]
     else:
         return [
-            (
-                read.query_name,
-                ut.ave_qual(read.query_qualities),
-                ut.ave_qual(read.query_alignment_qualities),
-                read.query_length,
-                read.query_alignment_length,
-                read.mapping_quality,
-                get_pID(read),
-            )
+            _read_metrics(read)
             for read in samfile.fetch(reference=chromosome, multiple_iterators=True)
             if not read.is_secondary and not read.is_unmapped and not read.is_supplementary
         ]
+
+
+def _read_metrics(read):
+    query_length = read.query_length
+    aligned_length = read.query_alignment_length
+    quality = ut.ave_qual(read.query_qualities)
+    # Without soft clipping, both metrics cover the same quality scores.
+    aligned_quality = (
+        quality if query_length == aligned_length else ut.ave_qual(read.query_alignment_qualities)
+    )
+    return (
+        read.query_name,
+        quality,
+        aligned_quality,
+        query_length,
+        aligned_length,
+        read.mapping_quality,
+        get_pID(read),
+    )
 
 
 def get_pID(read):
@@ -369,10 +371,8 @@ def get_pID(read):
 
     read.query_alignment_length can be zero in the case of ultra long reads aligned with minimap2 -L
     """
-    match = reduce(lambda x, y: x + y[1] if y[0] in (0, 7, 8) else x, read.cigartuples, 0)
-    ins = reduce(lambda x, y: x + y[1] if y[0] == 1 else x, read.cigartuples, 0)
-    delt = reduce(lambda x, y: x + y[1] if y[0] == 2 else x, read.cigartuples, 0)
-    alignment_length = match + ins + delt
+    # Sum aligned bases, insertions and deletions.
+    alignment_length = sum(length for op, length in read.cigartuples if op in (0, 1, 2, 7, 8))
     try:
         return (1 - read.get_tag("NM") / alignment_length) * 100
     except KeyError:

@@ -97,20 +97,20 @@ def get_input(
             huge=True,
         )
     else:
-        with cfutures.ProcessPoolExecutor(max_workers=filethreads) as executor:
-            extraction_function = partial(
-                proc_functions[source],
-                threads=threadsleft,
-                readtype=readtype,
-                barcoded=barcoded,
-                keep_supp=keep_supp,
-                huge=False,
-            )
-            datadf = combine_dfs(
-                dfs=[out for out in executor.map(extraction_function, files)],
-                names=names or files,
-                method=combine,
-            )
+        extraction_function = partial(
+            proc_functions[source],
+            threads=threadsleft,
+            readtype=readtype,
+            barcoded=barcoded,
+            keep_supp=keep_supp,
+            huge=False,
+        )
+        if len(files) == 1 and filethreads == 1:
+            dfs = [extraction_function(files[0])]
+        else:
+            with cfutures.ProcessPoolExecutor(max_workers=filethreads) as executor:
+                dfs = list(executor.map(extraction_function, files))
+        datadf = combine_dfs(dfs=dfs, names=names or files, method=combine)
     if "readIDs" in datadf.columns and pd.isna(datadf["readIDs"]).any():
         datadf.drop("readIDs", axis="columns", inplace=True)
     datadf = calculate_start_time(datadf)

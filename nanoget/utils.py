@@ -49,7 +49,7 @@ def ave_qual(quals, qround=False, tab=errs_tab(128)):
     convert average back to Phred scale
     """
     if quals:
-        mq = -10 * log(sum([tab[q] for q in quals]) / len(quals), 10)
+        mq = -10 * log(sum(map(tab.__getitem__, quals)) / len(quals), 10)
         if qround:
             return round(mq)
         else:
