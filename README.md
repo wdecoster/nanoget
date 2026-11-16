@@ -1,7 +1,6 @@
 # nanoget
 This module provides functions to extract useful metrics from Oxford Nanopore sequencing reads and alignments.  
 
-[![Twitter URL](https://img.shields.io/twitter/url/https/twitter.com/wouter_decoster.svg?style=social&label=Follow%20%40wouter_decoster)](https://twitter.com/wouter_decoster)
 [![install with conda](https://anaconda.org/bioconda/nanoget/badges/installer/conda.svg)](https://anaconda.org/bioconda/nanoget)
 
 
