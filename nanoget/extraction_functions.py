@@ -495,14 +495,15 @@ def info_to_dict(info):
     transparently returning a dict keyed by the legacy field names so that downstream
     code keeps working regardless of which format the file uses.
     """
-    fields = info.split(" ")[1:]
+    fields = info.split()[1:]
     if fields and "=" in fields[0]:
         # Legacy albacore/MinKNOW format: every field is "key=value".
         return {key: value for key, _, value in (field.partition("=") for field in fields)}
     # SAM-style format: "tag:type:value". Only the fields we need are extracted and
     # remapped to their legacy key names; the run id tag (RG) embeds the runid as its
     # first underscore-separated component (e.g. "<runid>_<model>@<version>_<barcode>").
-    data = {}
+    # Headers without an RG tag (e.g. raw Dorado output) get "." as run id.
+    data = {"runid": "."}
     for field in fields:
         tag, _, rest = field.partition(":")
         key = SAM_TAG_TO_LEGACY_KEY.get(tag)

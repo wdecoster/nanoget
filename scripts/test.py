@@ -92,6 +92,30 @@ def run_barcode_tests():
         assert sorted(df["lengths"].unique()) == list(range(500, 510))
 
 
+def run_sam_style_header_tests():
+    """SAM-style headers (MinKNOW/Dorado >= 26.01), including tab-separated, see issue 38."""
+    from nanoget.extraction_functions import info_to_dict
+
+    legacy = "id runid=abc read=1 ch=5 start_time=2016-07-15T14:23:22Z"
+    assert info_to_dict(legacy) == {"runid": "abc", "read": "1", "ch": "5",
+                                    "start_time": "2016-07-15T14:23:22Z"}
+    spaced = "id qs:f:28.1 ch:i:353 st:Z:2026-11-09T17:10:18+01:00 RG:Z:run1_model@v5_bc01"
+    expected = {"ch": "353", "start_time": "2026-11-09T17:10:18+01:00", "runid": "run1"}
+    assert info_to_dict(spaced) == expected
+    assert info_to_dict(spaced.replace(" ", "\t")) == expected
+    # no RG tag (raw dorado output): runid falls back to "."
+    no_rg = "id\tqs:f:28.1\tmx:i:2\tch:i:353\trn:i:1\tst:Z:2026-11-09T17:10:18.5+01:00"
+    assert info_to_dict(no_rg) == {"ch": "353", "start_time": "2026-11-09T17:10:18.5+01:00",
+                                   "runid": "."}
+    with tempfile.TemporaryDirectory() as tmpdir:
+        fq = os.path.join(tmpdir, "reads.fastq")
+        with open(fq, "w") as fh:
+            fh.write("@r1\tqs:f:20\tch:i:7\tst:Z:2026-11-09T17:10:18+01:00\nACGT\n+\nIIII\n")
+        df = nanoget.get_input("fastq_rich", [fq])
+        assert list(df["channelIDs"]) == [7] and list(df["runIDs"]) == ["."]
+
+
 if __name__ == "__main__":
     run_tests()
     run_barcode_tests()
+    run_sam_style_header_tests()
